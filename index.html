@@ -82,7 +82,6 @@
         .btn-loading { pointer-events: none; opacity: 0.8; animation: pulseGlow 1.5s infinite; }
         @keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 var(--primary-glow); } 50% { box-shadow: 0 0 0 10px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 
-        /* MODALS */
         .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 10000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; }
         .modal-overlay.active { display: flex; opacity: 1; }
         .modal-content { background: var(--bg-surface); width: 410px; border-radius: 24px; padding: 30px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); border: 1px solid var(--border); transform: translateY(30px); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -120,7 +119,6 @@
             <input type="text" id="regFullName" placeholder="Họ và tên chủ vựa (VD: Lê Thịnh Phát)">
             <input type="text" id="regLocation" placeholder="Địa chỉ vùng canh tác (VD: Cẩm Lệ, Đà Nẵng)">
             <input type="text" id="regPhone" placeholder="Số điện thoại liên lạc (Bắt buộc)">
-            
             <button class="btn-vip" onclick="doRegister()">KÍCH HOẠT TÀI KHOẢN CLOUD</button>
             <p class="toggle-form-text">Đã có tài khoản? <a onclick="switchAuthForm('login')">Quay lại Đăng nhập</a></p>
         </div>
@@ -164,6 +162,24 @@
                         <div class="stat-card"><div class="stat-icon icon-green"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div><h4>Smart Contract</h4><h2 style="font-size: 22px; padding-top: 5px; color: var(--primary);">ACTIVE</h2><span class="badge">Ký tập trung (Custodial)</span></div>
                     </div>
                     <div class="card"><h3 style="margin-top: 0;">Lưu lượng ghi sổ Blockchain 7 ngày qua</h3><div style="height: 350px;"><canvas id="mainChart"></canvas></div></div>
+                    
+                    <div class="card" style="margin-top: 25px;">
+                        <h3 style="margin-top: 0; color: var(--primary);">📋 Nhật ký chuỗi cung ứng phân tán (Minh bạch kiểm toán)</h3>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid var(--border); color: var(--text-muted); background: var(--bg-body);">
+                                        <th style="padding: 12px 10px;">Thời gian ghi nhận</th>
+                                        <th style="padding: 12px 10px;">Chủng loại sản phẩm</th>
+                                        <th style="padding: 12px 10px;">Sản lượng</th>
+                                        <th style="padding: 12px 10px;">Bảo chứng Blockchain (Etherscan Link)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTableBody">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="tab-input" class="tab-content">
@@ -204,20 +220,13 @@
 
     <div class="modal-overlay" id="forgotPasswordModal" onclick="closeModalOutside(event, 'forgotPasswordModal')">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3>Khôi phục mật khẩu</h3>
-                <span class="close-btn" onclick="closeModal('forgotPasswordModal')">×</span>
-            </div>
+            <div class="modal-header"><h3>Khôi phục mật khẩu</h3><span class="close-btn" onclick="closeModal('forgotPasswordModal')">×</span></div>
             <div class="modal-body" style="text-align: center;">
                 <p style="margin-bottom: 20px;">Xác thực số điện thoại để thiết lập mật khẩu mới.</p>
-                
                 <input type="text" id="forgotPhone" class="input-vip" placeholder="Số điện thoại đăng ký..." style="margin-bottom: 10px; padding: 12px;">
-                
                 <hr style="border: 0; border-top: 1px dashed var(--border); margin: 15px 0;">
-                
                 <input type="password" id="forgotNewPass" class="input-vip" placeholder="Nhập mật khẩu mới..." style="margin-bottom: 10px; padding: 12px;">
                 <input type="password" id="forgotNewPassConfirm" class="input-vip" placeholder="Xác nhận lại mật khẩu mới..." style="margin-bottom: 20px; padding: 12px;">
-                
                 <button class="btn-vip" id="btnResetPass" onclick="doForgotPassword()">CẬP NHẬT MẬT KHẨU MỚI</button>
             </div>
         </div>
@@ -242,6 +251,8 @@
 
     <script>
         let loggedInUser = "";
+        // ĐÃ GẮN SẴN ĐƯỜNG LINK BACKEND RENDER CỦA EM
+        const BACKEND_URL = "https://dm4-farm-backend.onrender.com";
 
         function switchAuthForm(formType) {
             if(formType === 'register') {
@@ -266,7 +277,7 @@
             }
             if(password !== passwordConfirm) { return alert("⚠️ Mật khẩu xác nhận không khớp. Vui lòng nhập lại!"); }
 
-            fetch("https://dm4-farm-backend.onrender.com/api/register", {
+            fetch(`${BACKEND_URL}/api/register`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, password, fullname, location, phone })
             })
@@ -289,7 +300,7 @@
             if(!username || !password) return alert("Vui lòng nhập đầy đủ Tài khoản và Mật khẩu!");
             btn.innerText = "ĐANG ĐỒNG BỘ DỮ LIỆU CLOUD...";
 
-            fetch("https://dm4-farm-backend.onrender.com/api/login", {
+            fetch(`${BACKEND_URL}/api/login`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username: username, password: password })
             })
@@ -308,10 +319,15 @@
                 document.getElementById("avatarIcon").innerText = charAvatar;
                 document.getElementById("modalAvatar").innerText = charAvatar;
 
-                fetch(`https://dm4-farm-backend.onrender.com/api/stats?farmer=${loggedInUser}`)
+                // Kéo sản lượng tổng về găm lên thẻ Dashboard
+                fetch(`${BACKEND_URL}/api/stats?farmer=${loggedInUser}`)
                 .then(r => r.json())
                 .then(statsData => {
                     document.getElementById("realTotalWeight").innerText = statsData.total_weight;
+                    
+                    // ĐỒNG THỜI: Tự động chạy hàm kéo bảng lịch sử tra cứu về đổ ra màn hình
+                    loadHistory();
+                    
                     document.getElementById("login-screen").style.opacity = "0";
                     document.getElementById("login-screen").style.visibility = "hidden";
                     setTimeout(() => { document.getElementById("app").style.opacity = "1"; initChart(); }, 400);
@@ -322,22 +338,19 @@
             });
         }
 
-        // HÀM QUÊN MẬT KHẨU MỚI (CHỈ TÌM BẰNG SĐT, TRẢ VỀ TÊN ĐĂNG NHẬP)
         function doForgotPassword() {
             const phone = document.getElementById("forgotPhone").value.trim();
             const newPass = document.getElementById("forgotNewPass").value;
             const newPassConfirm = document.getElementById("forgotNewPassConfirm").value;
             const btn = document.getElementById("btnResetPass");
 
-            if(!phone || !newPass || !newPassConfirm) {
-                return alert("Vui lòng điền đủ Số điện thoại và Mật khẩu mới!");
-            }
+            if(!phone || !newPass || !newPassConfirm) { return alert("Vui lòng điền đủ Số điện thoại và Mật khẩu mới!"); }
             if(newPass !== newPassConfirm) { return alert("⚠️ Mật khẩu mới không khớp. Vui lòng kiểm tra lại!"); }
 
             btn.innerText = "⏳ ĐANG XÁC MINH & CẬP NHẬT...";
             btn.classList.add("btn-loading");
 
-            fetch("https://dm4-farm-backend.onrender.com/api/forgot-password", {
+            fetch(`${BACKEND_URL}/api/forgot-password`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ phone: phone, new_password: newPass })
             })
@@ -346,26 +359,54 @@
                 btn.classList.remove("btn-loading");
                 btn.innerText = "CẬP NHẬT MẬT KHẨU MỚI";
                 if(data.status === "success") {
-                    // Báo thành công và nhắc nhở Username cho họ nhớ
                     alert(`✅ THÀNH CÔNG!\n\nTên đăng nhập tài khoản của bạn là: [ ${data.username} ]\nMật khẩu đã được đổi. Vui lòng dùng mật khẩu mới để đăng nhập lại.`);
-                    
                     closeModal('forgotPasswordModal');
-                    // Tự động điền Username vào khung đăng nhập
                     document.getElementById("loginName").value = data.username;
-                    
-                    // Xóa form
                     document.getElementById("forgotPhone").value = "";
                     document.getElementById("forgotNewPass").value = "";
                     document.getElementById("forgotNewPassConfirm").value = "";
-                } else {
-                    alert("❌ Lỗi: " + data.message);
-                }
-            })
-            .catch(err => {
-                btn.classList.remove("btn-loading");
-                btn.innerText = "CẬP NHẬT MẬT KHẨU MỚI";
+                } else { alert("❌ Lỗi: " + data.message); }
+            }).catch(err => {
+                btn.classList.remove("btn-loading"); btn.innerText = "CẬP NHẬT MẬT KHẨU MỚI";
                 alert("❌ Lỗi kết nối tới Server!");
             });
+        }
+
+        // HÀM VIP: KÉO DỮ LIỆU TỪ MONGODB ĐỂ THỂ HIỆN BẢNG TRA CỨU ETHERSCAN
+        function loadHistory() {
+            fetch(`${BACKEND_URL}/api/history?farmer=${loggedInUser}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === "success") {
+                    const tbody = document.getElementById("historyTableBody");
+                    tbody.innerHTML = "";
+                    
+                    if(data.records.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 25px; color: var(--text-muted); font-weight: 500;">Chưa có lô hàng nào được khởi tạo bảo chứng.</td></tr>`;
+                        return;
+                    }
+                    
+                    data.records.forEach(r => {
+                        const tr = document.createElement("tr");
+                        tr.style.borderBottom = "1px solid var(--border)";
+                        
+                        // Rút gọn mã băm giao dịch hiển thị cho đẹp giao diện (VD: 0x6133...A509)
+                        const shortHash = r.tx_hash ? r.tx_hash.substring(0, 10) + "..." + r.tx_hash.substring(r.tx_hash.length - 8) : "Xem Biên Lai";
+                        
+                        tr.innerHTML = `
+                            <td style="padding: 12px 10px; color: var(--text-main); font-weight: 600;">${r.date || 'Vừa xong'}</td>
+                            <td style="padding: 12px 10px; color: var(--text-main);">${r.flower_type}</td>
+                            <td style="padding: 12px 10px;"><span class="badge green" style="font-size:13px;">${r.weight} Bó</span></td>
+                            <td style="padding: 12px 10px;">
+                                <a href="https://sepolia.etherscan.io/tx/${r.tx_hash}" target="_blank" style="color: #2563eb; text-decoration: underline; font-family: monospace; font-size: 13px; font-weight: 700;">
+                                    ${shortHash} 🔗
+                                </a>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            }).catch(err => console.error("Lỗi nạp lịch sử chuỗi:", err));
         }
 
         function sendData() {
@@ -379,7 +420,7 @@
             btn.classList.add("btn-loading"); btn.innerText = "ĐANG TẠO CHỮ KÝ SỐ VÀ ĐẨY LÊN NODE..."; 
             msgBox.style.display = "block"; msgBox.style.background = "#fef3c7"; msgBox.style.color = "#d97706"; msgBox.innerText = "⏳ Đang đàm phán phí Gas và gửi Transaction...";
 
-            fetch("https://dm4-farm-backend.onrender.com/api/harvest", {
+            fetch(`${BACKEND_URL}/api/harvest`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ farmer: loggedInUser, flower_type: flowerType, weight: weight })
             })
@@ -390,9 +431,13 @@
                     msgBox.style.background = "#dcfce7"; msgBox.style.color = "#059669";
                     let txHash = data.message.split("TxHash: ")[1];
                     msgBox.innerHTML = `✅ <b>Ghi sổ Blockchain thành công!</b><br>Mã định danh xác thực toàn cầu:<br><a href="https://sepolia.etherscan.io/tx/${txHash}" target="_blank" style="color: #2563eb; text-decoration: underline; word-break: break-all; font-family: monospace;">${txHash}</a>`;
+                    
                     let currentWeight = parseInt(document.getElementById("realTotalWeight").innerText) || 0;
                     document.getElementById("realTotalWeight").innerText = currentWeight + parseInt(weight);
                     document.getElementById("weight").value = "";
+                    
+                    // ĐỒNG THỜI: Gọi nạp lại bảng nhật ký để dòng dữ liệu mới tinh vừa tạo bay vào bảng ngay lập tức
+                    loadHistory();
                 } else {
                     msgBox.style.background = "#fee2e2"; msgBox.style.color = "#ef4444";
                     msgBox.innerText = "❌ Lỗi Blockchain: " + data.message;

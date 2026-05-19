@@ -373,6 +373,7 @@
         }
 
         // HÀM VIP: KÉO DỮ LIỆU TỪ MONGODB ĐỂ THỂ HIỆN BẢNG TRA CỨU ETHERSCAN
+        // HÀM VIP: KÉO DỮ LIỆU TỪ MONGODB ĐỂ THỂ HIỆN BẢNG TRA CỨU ETHERSCAN
         function loadHistory() {
             fetch(`${BACKEND_URL}/api/history?farmer=${loggedInUser}`)
             .then(res => res.json())
@@ -390,25 +391,26 @@
                         const tr = document.createElement("tr");
                         tr.style.borderBottom = "1px solid var(--border)";
                         
-                        // Rút gọn mã băm giao dịch hiển thị cho đẹp giao diện (VD: 0x6133...A509)
-                        const shortHash = r.tx_hash ? r.tx_hash.substring(0, 10) + "..." + r.tx_hash.substring(r.tx_hash.length - 8) : "Xem Biên Lai";
+                        // LỌC DỮ LIỆU CŨ VÀ MỚI
+                        let hashDisplay = "";
+                        if (r.tx_hash && r.tx_hash.startsWith("0x")) {
+                            const shortHash = r.tx_hash.substring(0, 10) + "..." + r.tx_hash.substring(r.tx_hash.length - 8);
+                            hashDisplay = `<a href="https://sepolia.etherscan.io/tx/${r.tx_hash}" target="_blank" style="color: #2563eb; text-decoration: underline; font-family: monospace; font-size: 13px; font-weight: 700;">${shortHash} 🔗</a>`;
+                        } else {
+                            hashDisplay = `<span style="color: var(--text-muted); font-size: 13px; font-style: italic;">Dữ liệu cũ (Chưa đồng bộ TxHash)</span>`;
+                        }
                         
                         tr.innerHTML = `
-                            <td style="padding: 12px 10px; color: var(--text-main); font-weight: 600;">${r.date || 'Vừa xong'}</td>
+                            <td style="padding: 12px 10px; color: var(--text-main); font-weight: 600;">${r.date || 'Hệ thống cũ'}</td>
                             <td style="padding: 12px 10px; color: var(--text-main);">${r.flower_type}</td>
                             <td style="padding: 12px 10px;"><span class="badge green" style="font-size:13px;">${r.weight} Bó</span></td>
-                            <td style="padding: 12px 10px;">
-                                <a href="https://sepolia.etherscan.io/tx/${r.tx_hash}" target="_blank" style="color: #2563eb; text-decoration: underline; font-family: monospace; font-size: 13px; font-weight: 700;">
-                                    ${shortHash} 🔗
-                                </a>
-                            </td>
+                            <td style="padding: 12px 10px;">${hashDisplay}</td>
                         `;
                         tbody.appendChild(tr);
                     });
                 }
             }).catch(err => console.error("Lỗi nạp lịch sử chuỗi:", err));
         }
-
         function sendData() {
             const flowerType = document.getElementById("flowerType").value;
             const weight = document.getElementById("weight").value;

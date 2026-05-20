@@ -469,7 +469,7 @@
         let currentChartFilter = "week";
         let aiStream = null;
         let lastAIResult = null;
-        
+        let scanInterval = null;
         // ĐƯỜNG LINK RENDER
         const BACKEND_URL = "https://dm4-farm-backend.onrender.com";
 
@@ -1021,8 +1021,6 @@ function sendData() {
             await analyzeAIFormData(formData);
         }
 
-       let scanInterval = null; // Thêm biến toàn cục này ở đầu file <script>
-
         async function startAICamera() {
     try {
         if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -1046,19 +1044,19 @@ function sendData() {
 }
 
 function stopAICamera() {
-    if(aiStream) {
-        aiStream.getTracks().forEach(track => track.stop());
-        aiStream = null;
-    }
-    const video = document.getElementById("aiVideo");
-    if(video) video.srcObject = null;
-    
-    // DỪNG QUÉT KHI TẮT CAM
-    if(scanInterval) {
-        clearInterval(scanInterval);
-        scanInterval = null;
-    }
-}
+            if(aiStream) {
+                aiStream.getTracks().forEach(track => track.stop());
+                aiStream = null;
+            }
+            const video = document.getElementById("aiVideo");
+            if(video) video.srcObject = null;
+            
+            // DỪNG VÒNG LẶP QUÉT KHI TẮT CAM
+            if(scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
+            }
+        }
         function captureAIFrame() {
             const video = document.getElementById("aiVideo");
             if(!aiStream || !video || !video.videoWidth) {

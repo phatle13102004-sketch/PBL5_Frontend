@@ -94,6 +94,9 @@
         .modal-body { font-size: 14px; line-height: 1.6; color: var(--text-muted); }
         .info-row { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px dashed var(--border); }
         .info-row:last-child { border-bottom: none; }
+        .filter-btn { padding: 6px 14px; border: 1px solid var(--border); background: var(--bg-body); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text-muted); transition: 0.2s;}
+        .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 10px var(--primary-glow); } 
     </style>
 </head>
 <body>
@@ -148,7 +151,7 @@
                     <div class="dropdown" id="userDropdown">
                         <div class="dropdown-item" onclick="openModal('profileModal')"><svg viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg> Hồ sơ Hộ kinh doanh</div>
                         <div class="dropdown-item" onclick="openModal('web3Modal')"><svg viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg> Cài đặt Web3</div>
-                        <div class="dropdown-item" style="color: var(--danger);" onclick="location.reload()"><svg viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg> Đăng xuất</div>
+                        <div class="dropdown-item" style="color: var(--danger);" onclick="logOut()"><svg viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg> Đăng xuất</div>
                     </div>
                 </div>
             </div>
@@ -158,11 +161,22 @@
                     <h2 class="page-title">Báo Cáo Tổng Hợp</h2>
                     <div class="stats-grid">
                         <div class="stat-card"><div class="stat-icon icon-green"><svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div><h4>Tổng Sản Lượng</h4><h2 style="color: var(--primary);"><span id="realTotalWeight">0</span> <span style="font-size: 16px;">Bó</span></h2><span class="badge green">Dữ liệu mây MongoDB</span></div>
-                        <div class="stat-card"><div class="stat-icon icon-green"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div><h4>Tỉ lệ đạt chuẩn</h4><h2>92.4 %</h2><span class="badge">Đạt chuẩn (Loại 1)</span></div>
+                        <div class="stat-card"><div class="stat-icon icon-green"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div><h4>Tỉ lệ đạt chuẩn</h4><h2 id="passRate">0 %</h2><span class="badge">Đạt chuẩn (Loại 1)</span></div>
                         <div class="stat-card"><div class="stat-icon icon-green"><svg viewBox="0 0 24 24"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg></div><h4>Liên kết ví Web3</h4><h2 style="font-size: 18px; padding-top: 5px; word-break: break-all;">0x6133...A509</h2><span class="badge blue">Mạng: Sepolia Testnet</span></div>
                         <div class="stat-card"><div class="stat-icon icon-green"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div><h4>Smart Contract</h4><h2 style="font-size: 22px; padding-top: 5px; color: var(--primary);">ACTIVE</h2><span class="badge">Ký tập trung (Custodial)</span></div>
                     </div>
-                    <div class="card"><h3 style="margin-top: 0;">Lưu lượng ghi sổ Blockchain 7 ngày qua</h3><div style="height: 350px;"><canvas id="mainChart"></canvas></div></div>
+                    
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="margin: 0;">Lưu lượng ghi sổ Blockchain Real-time</h3>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="filter-btn" onclick="updateChart('day', this)">Hôm nay (Giờ)</button>
+                                <button class="filter-btn active" id="defaultFilterBtn" onclick="updateChart('week', this)">7 Ngày qua</button>
+                                <button class="filter-btn" onclick="updateChart('month', this)">30 Ngày qua</button>
+                            </div>
+                        </div>
+                        <div style="height: 350px;"><canvas id="mainChart"></canvas></div>
+                    </div>
                     
                     <div class="card" style="margin-top: 25px;">
                         <h3 style="margin-top: 0; color: var(--primary);">📋 Nhật ký chuỗi cung ứng phân tán (Minh bạch kiểm toán)</h3>
@@ -191,7 +205,7 @@
                         <label>Phân loại phẩm chất hàng hóa:</label>
                         <select id="flowerType" class="input-vip"><option>Cúc Đại Đóa - Loại 1 (Đạt chuẩn Quốc tế)</option><option>Cúc Đại Đóa - Loại 2 (Thị trường nội địa)</option></select>
                         <label>Sản lượng thu hoạch (Đơn vị: Bó):</label>
-                        <input type="number" id="weight" class="input-vip" placeholder="Nhập số bó thực tế...">
+                        <input type="number" id="weight" class="input-vip" placeholder="Nhập số bó thực tế (Lớn hơn 0)..." min="1">
                         <button class="btn-vip" id="submitBtn" onclick="sendData()">KÝ TRÊN CLOUD & ĐẨY LÊN BLOCKCHAIN</button>
                         <div id="result-msg" style="margin-top: 20px; padding: 15px; border-radius: 12px; display: none; font-weight: 600; text-align: center;"></div>
                     </div>
@@ -252,8 +266,25 @@
 
     <script>
         let loggedInUser = "";
-        // ĐÃ GẮN SẴN ĐƯỜNG LINK BACKEND RENDER CỦA EM
+        let myChart = null;
+        let globalRecords = [];
+        
+        // ĐÃ GẮN SẴN ĐƯỜNG LINK RENDER
         const BACKEND_URL = "https://dm4-farm-backend.onrender.com";
+
+        // TỰ ĐỘNG ĐĂNG NHẬP (CHỐNG F5)
+        window.onload = function() {
+            const savedSession = localStorage.getItem("dm4_session");
+            if(savedSession) {
+                const userData = JSON.parse(savedSession);
+                setupDashboard(userData);
+            }
+        };
+
+        function logOut() {
+            localStorage.removeItem("dm4_session");
+            location.reload();
+        }
 
         function switchAuthForm(formType) {
             if(formType === 'register') {
@@ -307,35 +338,44 @@
             })
             .then(res => { if(!res.ok) throw new Error("Tài khoản hoặc mật khẩu không chính xác!"); return res.json(); })
             .then(data => {
-                loggedInUser = data.username;
-                document.getElementById("topbarName").innerText = data.fullname;
-                document.getElementById("farmerName").value = data.fullname;
-                document.getElementById("modalProfileName").innerText = data.username;
-                document.getElementById("modalFullname").innerText = data.fullname;
-                document.getElementById("modalLocation").innerText = data.location;
-                document.getElementById("modalJoinDate").innerText = data.join_date;
-                document.getElementById("modalFarmerId").innerText = "#" + data.farmer_id;
-                
-                const charAvatar = data.fullname.charAt(0).toUpperCase();
-                document.getElementById("avatarIcon").innerText = charAvatar;
-                document.getElementById("modalAvatar").innerText = charAvatar;
-
-                // Kéo sản lượng tổng về găm lên thẻ Dashboard
-                fetch(`${BACKEND_URL}/api/stats?farmer=${loggedInUser}`)
-                .then(r => r.json())
-                .then(statsData => {
-                    document.getElementById("realTotalWeight").innerText = statsData.total_weight;
-                    
-                    // ĐỒNG THỜI: Tự động chạy hàm kéo bảng lịch sử tra cứu về đổ ra màn hình
-                    loadHistory();
-                    
-                    document.getElementById("login-screen").style.opacity = "0";
-                    document.getElementById("login-screen").style.visibility = "hidden";
-                    setTimeout(() => { document.getElementById("app").style.opacity = "1"; initChart(); }, 400);
-                });
+                localStorage.setItem("dm4_session", JSON.stringify(data));
+                setupDashboard(data);
             }).catch(err => {
                 alert("❌ Đăng nhập thất bại: " + err.message);
                 btn.innerText = "XÁC THỰC VÀO HỆ THỐNG";
+            });
+        }
+
+        function setupDashboard(data) {
+            loggedInUser = data.username;
+            document.getElementById("topbarName").innerText = data.fullname;
+            document.getElementById("farmerName").value = data.fullname;
+            document.getElementById("modalProfileName").innerText = data.username;
+            document.getElementById("modalFullname").innerText = data.fullname;
+            document.getElementById("modalLocation").innerText = data.location;
+            document.getElementById("modalJoinDate").innerText = data.join_date;
+            document.getElementById("modalFarmerId").innerText = "#" + data.farmer_id;
+            
+            const charAvatar = data.fullname.charAt(0).toUpperCase();
+            document.getElementById("avatarIcon").innerText = charAvatar;
+            document.getElementById("modalAvatar").innerText = charAvatar;
+
+            fetch(`${BACKEND_URL}/api/stats?farmer=${loggedInUser}`)
+            .then(r => r.json())
+            .then(statsData => {
+                document.getElementById("realTotalWeight").innerText = statsData.total_weight;
+                
+                // TÍNH TOÁN TỈ LỆ ĐẠT CHUẨN ĐỘNG
+                let passRate = 0;
+                if(statsData.total_weight > 0 && statsData.loai1_weight !== undefined) {
+                    passRate = (statsData.loai1_weight / statsData.total_weight) * 100;
+                }
+                document.getElementById("passRate").innerText = passRate.toFixed(1) + " %";
+
+                loadHistory();
+                document.getElementById("login-screen").style.opacity = "0";
+                document.getElementById("login-screen").style.visibility = "hidden";
+                setTimeout(() => { document.getElementById("app").style.opacity = "1"; initChart(); }, 400);
             });
         }
 
@@ -348,7 +388,7 @@
             if(!phone || !newPass || !newPassConfirm) { return alert("Vui lòng điền đủ Số điện thoại và Mật khẩu mới!"); }
             if(newPass !== newPassConfirm) { return alert("⚠️ Mật khẩu mới không khớp. Vui lòng kiểm tra lại!"); }
 
-            btn.innerText = "⏳ ĐANG XÁC MINH & CẬP NHẬT...";
+            btn.innerText = "⏳ ĐANG XÁC MINH...";
             btn.classList.add("btn-loading");
 
             fetch(`${BACKEND_URL}/api/forgot-password`, {
@@ -357,15 +397,11 @@
             })
             .then(res => res.json())
             .then(data => {
-                btn.classList.remove("btn-loading");
-                btn.innerText = "CẬP NHẬT MẬT KHẨU MỚI";
+                btn.classList.remove("btn-loading"); btn.innerText = "CẬP NHẬT MẬT KHẨU MỚI";
                 if(data.status === "success") {
-                    alert(`✅ THÀNH CÔNG!\n\nTên đăng nhập tài khoản của bạn là: [ ${data.username} ]\nMật khẩu đã được đổi. Vui lòng dùng mật khẩu mới để đăng nhập lại.`);
+                    alert(`✅ THÀNH CÔNG!\n\nTên đăng nhập: [ ${data.username} ]\nVui lòng đăng nhập lại.`);
                     closeModal('forgotPasswordModal');
                     document.getElementById("loginName").value = data.username;
-                    document.getElementById("forgotPhone").value = "";
-                    document.getElementById("forgotNewPass").value = "";
-                    document.getElementById("forgotNewPassConfirm").value = "";
                 } else { alert("❌ Lỗi: " + data.message); }
             }).catch(err => {
                 btn.classList.remove("btn-loading"); btn.innerText = "CẬP NHẬT MẬT KHẨU MỚI";
@@ -373,8 +409,6 @@
             });
         }
 
-        // HÀM VIP: KÉO DỮ LIỆU TỪ MONGODB ĐỂ THỂ HIỆN BẢNG TRA CỨU ETHERSCAN
-        // HÀM VIP: KÉO DỮ LIỆU TỪ MONGODB ĐỂ THỂ HIỆN BẢNG TRA CỨU ETHERSCAN
         function loadHistory() {
             fetch(`${BACKEND_URL}/api/history?farmer=${loggedInUser}`)
             .then(res => res.json())
@@ -384,41 +418,50 @@
                     tbody.innerHTML = "";
                     
                     if(data.records.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 25px; color: var(--text-muted); font-weight: 500;">Chưa có lô hàng nào được khởi tạo bảo chứng.</td></tr>`;
-                        return;
+                        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 25px; color: var(--text-muted);">Chưa có lô hàng nào.</td></tr>`;
+                    } else {
+                        data.records.forEach(r => {
+                            const tr = document.createElement("tr");
+                            tr.style.borderBottom = "1px solid var(--border)";
+                            
+                            let hashDisplay = "";
+                            if (r.tx_hash && r.tx_hash.startsWith("0x")) {
+                                const shortHash = r.tx_hash.substring(0, 10) + "..." + r.tx_hash.substring(r.tx_hash.length - 8);
+                                hashDisplay = `<a href="https://sepolia.etherscan.io/tx/${r.tx_hash}" target="_blank" style="color: #2563eb; text-decoration: underline; font-family: monospace; font-size: 13px; font-weight: 700;">${shortHash} 🔗</a>`;
+                            } else {
+                                hashDisplay = `<span style="color: var(--text-muted); font-size: 13px; font-style: italic;">Dữ liệu cũ (Chưa đồng bộ TxHash)</span>`;
+                            }
+                            
+                            tr.innerHTML = `
+                                <td style="padding: 12px 10px; font-weight: 600;">${r.date || 'Hệ thống cũ'}</td>
+                                <td style="padding: 12px 10px;">${r.flower_type}</td>
+                                <td style="padding: 12px 10px;"><span class="badge green">${r.weight} Bó</span></td>
+                                <td style="padding: 12px 10px;">${hashDisplay}</td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
                     }
                     
-                    data.records.forEach(r => {
-                        const tr = document.createElement("tr");
-                        tr.style.borderBottom = "1px solid var(--border)";
-                        
-                        // LỌC DỮ LIỆU CŨ VÀ MỚI
-                        let hashDisplay = "";
-                        if (r.tx_hash && r.tx_hash.startsWith("0x")) {
-                            const shortHash = r.tx_hash.substring(0, 10) + "..." + r.tx_hash.substring(r.tx_hash.length - 8);
-                            hashDisplay = `<a href="https://sepolia.etherscan.io/tx/${r.tx_hash}" target="_blank" style="color: #2563eb; text-decoration: underline; font-family: monospace; font-size: 13px; font-weight: 700;">${shortHash} 🔗</a>`;
-                        } else {
-                            hashDisplay = `<span style="color: var(--text-muted); font-size: 13px; font-style: italic;">Dữ liệu cũ (Chưa đồng bộ TxHash)</span>`;
-                        }
-                        
-                        tr.innerHTML = `
-                            <td style="padding: 12px 10px; color: var(--text-main); font-weight: 600;">${r.date || 'Hệ thống cũ'}</td>
-                            <td style="padding: 12px 10px; color: var(--text-main);">${r.flower_type}</td>
-                            <td style="padding: 12px 10px;"><span class="badge green" style="font-size:13px;">${r.weight} Bó</span></td>
-                            <td style="padding: 12px 10px;">${hashDisplay}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
+                    // CHẠY BIỂU ĐỒ REAL-TIME
+                    globalRecords = data.records;
+                    const defaultBtn = document.getElementById('defaultFilterBtn');
+                    if (defaultBtn) updateChart('week', defaultBtn);
                 }
-            }).catch(err => console.error("Lỗi nạp lịch sử chuỗi:", err));
+            }).catch(err => console.error("Lỗi nạp lịch sử:", err));
         }
+
         function sendData() {
             const flowerType = document.getElementById("flowerType").value;
-            const weight = document.getElementById("weight").value;
+            const weight = parseInt(document.getElementById("weight").value);
             const msgBox = document.getElementById("result-msg");
             const btn = document.getElementById("submitBtn");
 
-            if(!weight) { msgBox.style.display = "block"; msgBox.style.background = "#fee2e2"; msgBox.style.color = "#ef4444"; msgBox.innerText = "⚠️ Dữ liệu Khối lượng thu hoạch không được để trống!"; return; }
+            // CHẶN SỐ ÂM HOẶC BẰNG 0
+            if(!weight || weight <= 0) { 
+                msgBox.style.display = "block"; msgBox.style.background = "#fee2e2"; msgBox.style.color = "#ef4444"; 
+                msgBox.innerText = "⚠️ Sản lượng thu hoạch phải lớn hơn 0 bó!"; 
+                return; 
+            }
 
             btn.classList.add("btn-loading"); btn.innerText = "ĐANG TẠO CHỮ KÝ SỐ VÀ ĐẨY LÊN NODE..."; 
             msgBox.style.display = "block"; msgBox.style.background = "#fef3c7"; msgBox.style.color = "#d97706"; msgBox.innerText = "⏳ Đang đàm phán phí Gas và gửi Transaction...";
@@ -435,12 +478,9 @@
                     let txHash = data.message.split("TxHash: ")[1];
                     msgBox.innerHTML = `✅ <b>Ghi sổ Blockchain thành công!</b><br>Mã định danh xác thực toàn cầu:<br><a href="https://sepolia.etherscan.io/tx/${txHash}" target="_blank" style="color: #2563eb; text-decoration: underline; word-break: break-all; font-family: monospace;">${txHash}</a>`;
                     
-                    let currentWeight = parseInt(document.getElementById("realTotalWeight").innerText) || 0;
-                    document.getElementById("realTotalWeight").innerText = currentWeight + parseInt(weight);
+                    // Tự động load lại toàn bộ Dashboard để biểu đồ và số nhảy chuẩn xác
+                    setupDashboard({username: loggedInUser, fullname: document.getElementById("topbarName").innerText, location: document.getElementById("modalLocation").innerText, farmer_id: document.getElementById("modalFarmerId").innerText.replace("#", ""), join_date: document.getElementById("modalJoinDate").innerText});
                     document.getElementById("weight").value = "";
-                    
-                    // ĐỒNG THỜI: Gọi nạp lại bảng nhật ký để dòng dữ liệu mới tinh vừa tạo bay vào bảng ngay lập tức
-                    loadHistory();
                 } else {
                     msgBox.style.background = "#fee2e2"; msgBox.style.color = "#ef4444";
                     msgBox.innerText = "❌ Lỗi Blockchain: " + data.message;
@@ -448,8 +488,77 @@
             }).catch(err => {
                 btn.classList.remove("btn-loading"); btn.innerText = "KÝ TRÊN CLOUD & ĐẨY LÊN BLOCKCHAIN";
                 msgBox.style.background = "#fee2e2"; msgBox.style.color = "#ef4444";
-                msgBox.innerText = "❌ Mất kết nối tới Server. Hãy chắc chắn Terminal Backend đang chạy.";
+                msgBox.innerText = "❌ Mất kết nối tới Server.";
             });
+        }
+
+        // HÀM KHỞI TẠO BIỂU ĐỒ ĐỘNG
+        function initChart() {
+            if(myChart) myChart.destroy();
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            Chart.defaults.color = '#64748b'; Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+            myChart = new Chart(ctx, { 
+                type: 'line', 
+                data: { labels: [], datasets: [{ label: 'Sản lượng ghi sổ (Bó)', data: [], borderColor: '#059669', backgroundColor: 'rgba(5, 150, 105, 0.1)', borderWidth: 3, fill: true, tension: 0.4 }] }, 
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } 
+            });
+            if(globalRecords.length > 0) updateChart('week', document.getElementById('defaultFilterBtn'));
+        }
+
+        // HÀM LỌC BIỂU ĐỒ THEO THỜI GIAN THỰC
+        function updateChart(timeframe, btn) {
+            if(btn) {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
+            if(!myChart) return;
+
+            const now = new Date();
+            let labels = [];
+            let dataPoints = [];
+            let agg = {}; 
+
+            function parseDateStr(str) {
+                if(!str || str.includes('cũ')) return new Date(0);
+                const parts = str.split(' ');
+                if(parts.length !== 2) return new Date(0);
+                const d = parts[0].split('/');
+                const t = parts[1].split(':');
+                return new Date(d[2], d[1] - 1, d[0], t[0], t[1]);
+            }
+
+            if(timeframe === 'day') {
+                for(let i=0; i<=now.getHours(); i++) {
+                    let h = i.toString().padStart(2, '0') + ":00";
+                    labels.push(h); agg[h] = 0;
+                }
+                globalRecords.forEach(r => {
+                    let d = parseDateStr(r.date);
+                    if(d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+                        let h = d.getHours().toString().padStart(2, '0') + ":00";
+                        if(agg[h] !== undefined) agg[h] += r.weight;
+                    }
+                });
+                dataPoints = labels.map(l => agg[l]);
+            } else if(timeframe === 'week' || timeframe === 'month') {
+                let daysCount = (timeframe === 'week') ? 6 : 29;
+                for(let i = daysCount; i >= 0; i--) {
+                    let d = new Date(now);
+                    d.setDate(d.getDate() - i);
+                    let dateStr = d.getDate().toString().padStart(2,'0') + '/' + (d.getMonth()+1).toString().padStart(2,'0');
+                    labels.push(dateStr); agg[dateStr] = 0;
+                }
+                globalRecords.forEach(r => {
+                    let d = parseDateStr(r.date);
+                    let dateStr = d.getDate().toString().padStart(2,'0') + '/' + (d.getMonth()+1).toString().padStart(2,'0');
+                    if(agg[dateStr] !== undefined) agg[dateStr] += r.weight;
+                });
+                dataPoints = labels.map(l => agg[l]);
+            }
+
+            myChart.data.labels = labels;
+            myChart.data.datasets[0].data = dataPoints;
+            myChart.update();
         }
 
         function switchTab(tabId, element) { document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active')); element.classList.add('active'); document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active')); document.getElementById(tabId).classList.add('active'); }
@@ -459,11 +568,6 @@
         function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
         function closeModalOutside(event, modalId) { if (event.target.id === modalId) closeModal(modalId); }
         function toggleTheme() { document.body.classList.toggle("dark-theme"); }
-        function initChart() {
-            const ctx = document.getElementById('mainChart').getContext('2d');
-            Chart.defaults.color = '#64748b'; Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
-            new Chart(ctx, { type: 'line', data: { labels: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'], datasets: [{ label: 'Số lô hàng đã ghi sổ', data: [15, 22, 18, 30, 25, 40, 55], borderColor: '#059669', backgroundColor: 'rgba(5, 150, 105, 0.1)', borderWidth: 3, fill: true, tension: 0.4 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
-        }
     </script>
 </body>
 </html>

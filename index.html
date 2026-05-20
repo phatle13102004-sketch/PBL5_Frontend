@@ -374,8 +374,10 @@
                                     <div class="ai-kpi-item"><span>Chất lượng</span><strong id="aiQuality">N/A</strong></div>
                                     <div class="ai-kpi-item"><span>Giá đề xuất</span><strong id="aiPrice">N/A</strong></div>
                                     <div class="ai-kpi-item"><span>Chu vi</span><strong id="aiPerimeter">0</strong></div>
+                                    <div class="ai-kpi-item"><span>Diện tích ROI</span><strong id="aiAreaRatio">0%</strong></div>
+                                    <div class="ai-kpi-item"><span>Độ tin cậy</span><strong id="aiConfidence">0%</strong></div>
                                 </div>
-                                <p id="aiNote" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">Mẹo: đặt bó hoa nằm trong khung, nền ít vàng và đủ sáng để mask HSV không bị nhiễu.</p>
+                                <p id="aiNote" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">Mẹo: đặt bó hoa gần camera, nằm gọn trong khung, dùng nền tương phản và đủ sáng. Bộ nhận diện hiện dùng HSV + contour nên ảnh quá xa hoặc nền trùng màu sẽ khó bắt.</p>
                                 <button class="btn-vip" onclick="applyAIToHarvestForm()" style="margin-top: 12px;">ĐƯA KẾT QUẢ AI VÀO PHIẾU</button>
                             </div>
                         </div>
@@ -794,7 +796,14 @@
                     throw new Error(data.message || "Backend không phân tích được ảnh.");
                 }
                 renderAIResult(data);
-                showAIStatus(data.detected ? "AI đã phân loại xong." : "AI chưa phát hiện rõ bó hoa trong ảnh.", data.detected ? "success" : "error");
+                if(data.detected) {
+                    const conf = data.confidence ? ` Độ tin cậy: ${Math.round(Number(data.confidence) * 100)}%.` : "";
+                    showAIStatus("AI đã phân loại xong." + conf, "success");
+                } else {
+                    const area = data.area_ratio !== undefined ? ` Area: ${(Number(data.area_ratio) * 100).toFixed(1)}%.` : "";
+                    const mask = data.mask_ratio !== undefined ? ` Mask: ${(Number(data.mask_ratio) * 100).toFixed(1)}%.` : "";
+                    showAIStatus("AI chưa phát hiện rõ bó hoa. Hãy đưa hoa vào gần camera hơn, dùng nền ít vàng/trắng và đủ sáng." + area + mask, "error");
+                }
             } catch (err) {
                 showAIStatus("Lỗi AI: " + err.message, "error");
             }
@@ -806,6 +815,10 @@
             document.getElementById("aiQuality").innerText = data.quality || "N/A";
             document.getElementById("aiPrice").innerText = data.price_display || "0 VNĐ";
             document.getElementById("aiPerimeter").innerText = Math.round(Number(data.perimeter || 0)).toString();
+            const areaEl = document.getElementById("aiAreaRatio");
+            const confEl = document.getElementById("aiConfidence");
+            if(areaEl) areaEl.innerText = ((Number(data.area_ratio || 0) * 100).toFixed(1)) + "%";
+            if(confEl) confEl.innerText = Math.round(Number(data.confidence || 0) * 100) + "%";
             const annotated = document.getElementById("aiAnnotated");
             if(data.annotated_image) {
                 annotated.src = data.annotated_image;

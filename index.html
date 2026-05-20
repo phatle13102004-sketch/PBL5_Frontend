@@ -232,10 +232,26 @@
                             <div class="section-title"><svg viewBox="0 0 24 24" class="icon-green"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Thông tin cơ bản</div>
                             <div class="form-grid">
                                 <div class="form-group"><label>Mã lô <span>*</span></label><input type="text" id="maLo" class="input-vip" placeholder="VD: CUC004"></div>
-                                <div class="form-group"><label>Loại hoa <span>*</span></label><input type="text" id="flowerType" class="input-vip" value="Cúc Đại Đóa"></div>
+                                
+                                <div class="form-group">
+                                    <label>Loại hoa <span>*</span></label>
+                                    <select id="flowerType" class="input-vip">
+                                        <option value="Cúc Đại Đóa">Cúc Đại Đóa</option>
+                                        <option value="Cúc Pha Lê">Cúc Pha Lê</option>
+                                        <option value="Cúc Vàng">Cúc Vàng</option>
+                                        <option value="Cúc Trắng">Cúc Trắng</option>
+                                        <option value="Hoa Hồng">Hoa Hồng</option>
+                                    </select>
+                                </div>
+                                
                                 <div class="form-group"><label>Tên vườn <span>*</span></label><input type="text" id="tenVuon" class="input-vip" placeholder="VD: Vườn Hoa Đà Lạt"></div>
                                 <div class="form-group"><label>Người thu hoạch <span>*</span></label><input type="text" id="farmerName" class="input-vip" readonly style="opacity:0.7;"></div>
-                                <div class="form-group"><label>Ngày thu hoạch <span>*</span></label><input type="date" id="ngayThu" class="input-vip"></div>
+                                
+                                <div class="form-group">
+                                    <label>Ngày thu hoạch <span>*</span></label>
+                                    <input type="text" id="ngayThu" class="input-vip" placeholder="dd/mm/yyyy" onfocus="(this.type='date')" onblur="(if(!this.value) this.type='text')">
+                                </div>
+                                
                                 <div class="form-group"><label>Khu vực / Vị trí <span>*</span></label><input type="text" id="khuVuc" class="input-vip" placeholder="VD: Đà Lạt, Lâm Đồng"></div>
                             </div>
                         </div>
@@ -244,8 +260,23 @@
                             <div class="section-title">Thông tin chất lượng</div>
                             <div class="form-grid" style="margin-bottom: 20px;">
                                 <div class="form-group"><label>Số lượng (bó) <span>*</span></label><input type="number" id="weight" class="input-vip" placeholder="VD: 250"></div>
-                                <div class="form-group"><label>Giá đề xuất (đ/bó) <span>*</span></label><input type="number" id="giaBan" class="input-vip" placeholder="VD: 50000"></div>
+                                
+                                <div class="form-group">
+                                    <label>Giá đề xuất (VNĐ/bó) <span>*</span></label>
+                                    <select id="giaBanSelect" class="input-vip" onchange="toggleCustomPrice()">
+                                        <option value="100.000">100.000 VNĐ</option>
+                                        <option value="200.000">200.000 VNĐ</option>
+                                        <option value="300.000">300.000 VNĐ</option>
+                                        <option value="400.000">400.000 VNĐ</option>
+                                        <option value="500.000" selected>500.000 VNĐ</option>
+                                        <option value="600.000">600.000 VNĐ</option>
+                                        <option value="700.000">700.000 VNĐ</option>
+                                        <option value="other">Số khác...</option>
+                                    </select>
+                                    <input type="number" id="giaBanCustom" class="input-vip" placeholder="Nhập giá tự gõ (VNĐ)..." style="display:none; margin-top:8px;">
+                                </div>
                             </div>
+                            
                             <div class="form-group">
                                 <label>Loại chất lượng</label>
                                 <div class="quality-selector">
@@ -391,6 +422,18 @@
         function logOut() { localStorage.removeItem("dm4_session"); location.reload(); }
         function selectQuality(element, q) { document.querySelectorAll('.quality-box').forEach(el => el.classList.remove('active')); element.classList.add('active'); selectedQuality = q; }
 
+        // Bật/tắt ô gõ tay Giá đề xuất
+        function toggleCustomPrice() {
+            const select = document.getElementById("giaBanSelect");
+            const customInput = document.getElementById("giaBanCustom");
+            if(select.value === "other") {
+                customInput.style.display = "block";
+                customInput.focus();
+            } else {
+                customInput.style.display = "none";
+            }
+        }
+
         function switchAuthForm(formType) {
             document.getElementById("loginFormBox").style.display = formType === 'login' ? "block" : "none";
             document.getElementById("registerFormBox").style.display = formType === 'register' ? "block" : "none";
@@ -437,7 +480,6 @@
             });
         }
 
-        // TÍNH NĂNG MỚI: DANH SÁCH LÔ HOA CÓ NÚT BẤM BẬT MODAL
         function loadHistory() {
             fetch(`${BACKEND_URL}/api/history?farmer=${loggedInUser}`).then(res => res.json()).then(data => {
                 if(data.status === "success") {
@@ -448,6 +490,8 @@
                     data.records.forEach((r, index) => {
                         let isLoai1 = r.flower_type.includes("Loại 1");
                         let flowerNameOnly = r.flower_type.split(" - ")[0] || r.flower_type;
+                        // SỬA 4: HIỂN THỊ THỜI GIAN THỰC ĐÃ CÓ (GIỜ:PHÚT) RÚT TỪ BACKEND R.DATE
+                        let timeDisplay = r.date || 'Hệ thống cũ';
                         
                         tbody.innerHTML += `
                             <div class="lot-card">
@@ -457,7 +501,7 @@
                                 </div>
                                 <div class="lot-title">${flowerNameOnly}</div>
                                 <div class="lot-info"><svg viewBox="0 0 24 24" style="width:14px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${r.ten_vuon || 'Vườn cục bộ'}</div>
-                                <div class="lot-info"><svg viewBox="0 0 24 24" style="width:14px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${r.ngay_thu ? new Date(r.ngay_thu).toLocaleDateString('vi-VN') : (r.date || 'Hệ thống cũ')}</div>
+                                <div class="lot-info"><svg viewBox="0 0 24 24" style="width:14px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${timeDisplay}</div>
                                 <div class="lot-info"><svg viewBox="0 0 24 24" style="width:14px"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg> ${r.weight} bó</div>
                                 <span class="badge ${isLoai1 ? 'green' : ''}" style="margin-top:10px;">${isLoai1 ? 'Loại 1' : 'Loại 2'}</span>
                                 <button class="btn-outline" onclick="showLotDetail(${index})">Xem chi tiết Lô Hoa</button>
@@ -471,19 +515,25 @@
             });
         }
 
-        // HÀM HIỂN THỊ MODAL CHI TIẾT KHI BẤM NÚT "XEM CHI TIẾT" TỪ DANH SÁCH
         function showLotDetail(index) {
             const r = globalRecords[index];
             document.getElementById("dt_flower").innerText = r.flower_name || r.flower_type.split(" - ")[0];
             document.getElementById("dt_malo").innerText = "#" + (r.ma_lo || 'LOT_'+(index+1));
             document.getElementById("dt_loai").innerText = r.quality || (r.flower_type.includes("Loại 1") ? "Loại 1" : "Loại 2");
             document.getElementById("dt_vuon").innerText = r.ten_vuon || "Vườn cục bộ";
-            document.getElementById("dt_date").innerText = r.ngay_thu ? new Date(r.ngay_thu).toLocaleDateString('vi-VN') : (r.date || 'Hệ thống cũ');
+            
+            // Format ngày thu hoạch về DD/MM/YYYY cho form chi tiết
+            let dateVal = "N/A";
+            if(r.ngay_thu && r.ngay_thu.includes("-")) {
+                let p = r.ngay_thu.split("-");
+                dateVal = p[2] + "/" + p[1] + "/" + p[0];
+            } else { dateVal = r.ngay_thu || r.date || 'Hệ thống cũ'; }
+            
+            document.getElementById("dt_date").innerText = dateVal;
             document.getElementById("dt_loc").innerText = r.khu_vuc || "Chưa xác định";
             document.getElementById("dt_qty").innerText = r.weight + " bó";
             document.getElementById("dt_gia").innerText = r.gia_ban ? r.gia_ban + " đ/bó" : "N/A";
 
-            // Nút bấm Etherscan
             const btnLink = document.getElementById("dt_link");
             const oldMsg = document.getElementById("dt_old_msg");
             if(r.tx_hash && r.tx_hash.startsWith("0x")) {
@@ -528,17 +578,23 @@
 
         function sendData() {
             const maLo = document.getElementById("maLo").value.trim();
-            const flowerName = document.getElementById("flowerType").value.trim();
+            const flowerName = document.getElementById("flowerType").value;
             const tenVuon = document.getElementById("tenVuon").value.trim();
-            const ngayThu = document.getElementById("ngayThu").value;
+            
+            // Lấy giá trị ngày thu hoạch chuẩn YYYY-MM-DD từ input date và format lại thành DD/MM/YYYY để hiển thị
+            let ngayThuRaw = document.getElementById("ngayThu").value;
             const khuVuc = document.getElementById("khuVuc").value.trim();
             const weight = parseInt(document.getElementById("weight").value);
-            const giaBan = document.getElementById("giaBan").value.trim();
+            
+            // Xử lý Giá bán
+            let giaBan = document.getElementById("giaBanSelect").value;
+            if(giaBan === "other") { giaBan = document.getElementById("giaBanCustom").value.trim(); }
+
             const ghiChu = document.getElementById("ghiChu").value.trim();
             const msgBox = document.getElementById("result-msg");
             const btn = document.getElementById("submitBtn");
 
-            if(!maLo || !flowerName || !tenVuon || !ngayThu || !khuVuc || !weight || !giaBan) { 
+            if(!maLo || !flowerName || !tenVuon || !ngayThuRaw || !khuVuc || !weight || !giaBan) { 
                 msgBox.style.display = "block"; msgBox.style.background = "#fee2e2"; msgBox.style.color = "#ef4444"; 
                 msgBox.innerText = "⚠️ Vui lòng điền đầy đủ các thông tin bắt buộc (*)!"; return; 
             }
@@ -549,7 +605,7 @@
 
             fetch(`${BACKEND_URL}/api/harvest`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ farmer: loggedInUser, ma_lo: maLo, flower_name: flowerName, ten_vuon: tenVuon, ngay_thu: ngayThu, khu_vuc: khuVuc, weight: weight, gia_ban: giaBan, quality: selectedQuality, ghi_chu: ghiChu })
+                body: JSON.stringify({ farmer: loggedInUser, ma_lo: maLo, flower_name: flowerName, ten_vuon: tenVuon, ngay_thu: ngayThuRaw, khu_vuc: khuVuc, weight: weight, gia_ban: giaBan, quality: selectedQuality, ghi_chu: ghiChu })
             })
             .then(res => res.json()).then(data => {
                 btn.innerText = "KÝ TRÊN CLOUD & ĐẨY LÊN BLOCKCHAIN";
@@ -558,12 +614,18 @@
                     document.getElementById("form-view").style.display = "none";
                     document.getElementById("success-view").style.display = "block";
                     
+                    // Xử lý hiển thị ngày dạng Việt Nam DD/MM/YYYY trên View Xác Thực
+                    let dateDisplay = "N/A";
+                    if(ngayThuRaw.includes("-")) {
+                        let p = ngayThuRaw.split("-"); dateDisplay = p[2] + "/" + p[1] + "/" + p[0];
+                    }
+
                     document.getElementById("sv_flower").innerText = flowerName;
                     document.getElementById("sv_malo").innerText = "#" + maLo;
                     document.getElementById("sv_loai").innerText = selectedQuality;
                     document.getElementById("sv_vuon").innerText = tenVuon;
                     document.getElementById("sv_farmer").innerText = document.getElementById("farmerName").value;
-                    document.getElementById("sv_date").innerText = new Date(ngayThu).toLocaleDateString('vi-VN');
+                    document.getElementById("sv_date").innerText = dateDisplay;
                     document.getElementById("sv_loc").innerText = khuVuc;
                     document.getElementById("sv_qty").innerText = weight + " bó";
                     document.getElementById("sv_gia").innerText = giaBan + " đ/bó";
@@ -575,11 +637,22 @@
             });
         }
 
+        // SỬA 5: NÚT X ĐÃ TỰ ĐỘNG REFRESH LÀM MỚI FORM SẠCH SẼ
         function closeSuccessView() {
             document.getElementById("success-view").style.display = "none";
             document.getElementById("form-view").style.display = "block";
-            document.getElementById("weight").value = "";
+            
+            // Xóa sạch các ô đã điền
             document.getElementById("maLo").value = "";
+            document.getElementById("tenVuon").value = "";
+            document.getElementById("ngayThu").value = "";
+            document.getElementById("ngayThu").type = "text"; // Trả lại cái placeholder
+            document.getElementById("khuVuc").value = "";
+            document.getElementById("weight").value = "";
+            document.getElementById("giaBanSelect").value = "500.000";
+            document.getElementById("giaBanCustom").value = "";
+            document.getElementById("giaBanCustom").style.display = "none";
+            document.getElementById("ghiChu").value = "";
             document.getElementById("result-msg").style.display = "none";
         }
 

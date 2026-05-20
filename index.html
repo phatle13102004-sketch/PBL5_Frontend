@@ -1021,30 +1021,44 @@ function sendData() {
             await analyzeAIFormData(formData);
         }
 
+       let scanInterval = null; // Thêm biến toàn cục này ở đầu file <script>
+
         async function startAICamera() {
-            try {
-                if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error("Trình duyệt không hỗ trợ camera.");
-                }
-                aiStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-                const video = document.getElementById("aiVideo");
-                video.srcObject = aiStream;
-                setAIPreview(null, true);
-                showAIStatus("Camera đã bật. Đặt bó hoa vào khung rồi bấm Chụp & phân loại.", "success");
-            } catch (err) {
-                showAIStatus("Không mở được camera: " + err.message, "error");
-            }
+    try {
+        if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error("Trình duyệt không hỗ trợ camera.");
         }
+        aiStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        const video = document.getElementById("aiVideo");
+        video.srcObject = aiStream;
+        setAIPreview(null, true);
+        showAIStatus("Camera đã bật. Đang tự động quét...", "success");
+        
+        // TỰ ĐỘNG QUÉT: Gọi hàm captureAIFrame mỗi 1000ms (1 giây)
+        if(scanInterval) clearInterval(scanInterval);
+        scanInterval = setInterval(() => {
+            if (aiStream) captureAIFrame();
+        }, 1000);
 
-        function stopAICamera() {
-            if(aiStream) {
-                aiStream.getTracks().forEach(track => track.stop());
-                aiStream = null;
-            }
-            const video = document.getElementById("aiVideo");
-            if(video) video.srcObject = null;
-        }
+    } catch (err) {
+        showAIStatus("Không mở được camera: " + err.message, "error");
+    }
+}
 
+function stopAICamera() {
+    if(aiStream) {
+        aiStream.getTracks().forEach(track => track.stop());
+        aiStream = null;
+    }
+    const video = document.getElementById("aiVideo");
+    if(video) video.srcObject = null;
+    
+    // DỪNG QUÉT KHI TẮT CAM
+    if(scanInterval) {
+        clearInterval(scanInterval);
+        scanInterval = null;
+    }
+}
         function captureAIFrame() {
             const video = document.getElementById("aiVideo");
             if(!aiStream || !video || !video.videoWidth) {

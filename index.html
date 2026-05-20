@@ -116,6 +116,20 @@
 
         .weather-card { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-radius: 16px; background: var(--bg-surface); border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); margin-bottom: 15px; border-left: 5px solid; }
 
+
+
+        .ai-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 20px; align-items: start; }
+        .ai-camera-box, .ai-result-box { background: var(--bg-body); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
+        .ai-preview, .ai-video { width: 100%; max-height: 420px; object-fit: contain; border-radius: 14px; background: #0f172a; border: 1px solid var(--border); }
+        .ai-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+        .ai-kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+        .ai-kpi-item { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+        .ai-kpi-item span { display: block; color: var(--text-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 5px; }
+        .ai-kpi-item strong { font-size: 18px; color: var(--text-main); }
+        .ai-status { margin-top: 12px; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 700; display: none; }
+        .ai-status.show { display: block; }
+        @media (max-width: 900px) { .ai-grid { grid-template-columns: 1fr; } .ai-actions { grid-template-columns: 1fr; } }
+
         .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 10000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; }
         .modal-overlay.active { display: flex; opacity: 1; }
         .modal-content { background: var(--bg-surface); width: 450px; border-radius: 24px; padding: 30px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); border: 1px solid var(--border); transform: translateY(30px); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); max-height: 90vh; overflow-y: auto;}
@@ -165,6 +179,8 @@
                 <div class="menu-item active" onclick="switchTab('tab-dashboard', this)"><svg viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg><span>Dashboard Giám Sát</span></div>
                 <div class="menu-item" onclick="switchTab('tab-list', this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg><span>Danh Sách Lô Hoa</span></div>
                 <div class="menu-item" onclick="switchTab('tab-input', this)"><svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><span>Khởi Tạo Phiếu</span></div>
+
+                <div class="menu-item" onclick="switchTab('tab-ai', this)"><svg viewBox="0 0 24 24"><path d="M9.75 3a2.25 2.25 0 00-2.25 2.25v.5H6A3 3 0 003 8.75v7.5A3 3 0 006 19.25h12a3 3 0 003-3v-7.5a3 3 0 00-3-3h-1.5v-.5A2.25 2.25 0 0014.25 3h-4.5z"/><path d="M9 12h.01M15 12h.01M9.5 15.5c1.6 1 3.4 1 5 0"/></svg><span>AI Phân Loại Hoa</span></div>
                 <div class="menu-item" onclick="switchTab('tab-weather', this)"><svg viewBox="0 0 24 24"><path d="M17.5 19c2.5 0 4.5-2 4.5-4.5S20 10 17.5 10c-.5 0-1 .1-1.4.3A6 6 0 0 0 5 10c0 3.3 2.7 6 6 6M10 16v5M14 16v5M6 16v3M18 16v3"/></svg><span>Thời Tiết & Khuyến Nghị</span></div>
             </div>
             <div style="padding: 20px;"><div class="menu-item" style="background: var(--bg-body);" onclick="toggleTheme()"><svg viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg><span>Đổi Giao Diện</span></div></div>
@@ -325,6 +341,47 @@
                     </div>
                 </div>
 
+
+
+                <div id="tab-ai" class="tab-content">
+                    <h2 class="page-title">AI Phân Loại Bó Hoa Cúc</h2>
+                    <p style="color: var(--text-muted); margin-bottom: 25px;">Chụp ảnh hoặc tải ảnh bó hoa. Backend sẽ xử lý bằng OpenCV/HSV, đo chu vi vùng hoa vàng và phân loại Loại 1, Loại 2 hoặc Loại 3.</p>
+                    <div class="ai-grid">
+                        <div class="card">
+                            <div class="section-title"><svg viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg> Nguồn ảnh kiểm định</div>
+                            <div class="ai-camera-box">
+                                <video id="aiVideo" class="ai-video" autoplay playsinline muted style="display:none;"></video>
+                                <img id="aiPreview" class="ai-preview" alt="Ảnh phân loại sẽ hiện ở đây" style="display:none;">
+                                <div id="aiEmptyPreview" style="height: 320px; border-radius: 14px; border: 1px dashed var(--border); display:flex; align-items:center; justify-content:center; text-align:center; color:var(--text-muted); padding:20px; box-sizing:border-box;">Chưa có ảnh. Hãy bật camera hoặc tải ảnh bó hoa lên.</div>
+                                <canvas id="aiCanvas" style="display:none;"></canvas>
+                                <input type="file" id="aiImageInput" accept="image/*" style="display:none;" onchange="handleAIUpload(event)">
+                                <div class="ai-actions">
+                                    <button class="btn-outline" onclick="document.getElementById('aiImageInput').click()">Tải ảnh lên</button>
+                                    <button class="btn-outline" onclick="startAICamera()">Bật camera</button>
+                                    <button class="btn-outline" onclick="captureAIFrame()">Chụp & phân loại</button>
+                                    <button class="btn-outline" onclick="stopAICamera()">Tắt camera</button>
+                                </div>
+                                <div id="aiStatus" class="ai-status"></div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="section-title"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 3l7 4v5c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V7l7-4z"/></svg> Kết quả AI</div>
+                            <div class="ai-result-box">
+                                <img id="aiAnnotated" class="ai-preview" alt="Ảnh đã khoanh vùng" style="display:none; margin-bottom: 12px;">
+                                <div class="ai-kpi">
+                                    <div class="ai-kpi-item"><span>Phân loại</span><strong id="aiType">Chưa có</strong></div>
+                                    <div class="ai-kpi-item"><span>Chất lượng</span><strong id="aiQuality">N/A</strong></div>
+                                    <div class="ai-kpi-item"><span>Giá đề xuất</span><strong id="aiPrice">N/A</strong></div>
+                                    <div class="ai-kpi-item"><span>Chu vi</span><strong id="aiPerimeter">0</strong></div>
+                                </div>
+                                <p id="aiNote" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">Mẹo: đặt bó hoa nằm trong khung, nền ít vàng và đủ sáng để mask HSV không bị nhiễu.</p>
+                                <button class="btn-vip" onclick="applyAIToHarvestForm()" style="margin-top: 12px;">ĐƯA KẾT QUẢ AI VÀO PHIẾU</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="tab-weather" class="tab-content">
                     <h2 class="page-title">Thời Tiết & Khuyến Nghị Nông Nghiệp</h2>
                     <p style="color: var(--text-muted); margin-bottom: 25px;">Hỗ trợ ra quyết định thời điểm thu hoạch hoa cúc tối ưu nhất dựa trên dữ liệu khí tượng vùng trồng.</p>
@@ -407,6 +464,9 @@
         let myChart = null;
         let globalRecords = [];
         let selectedQuality = "Loại 1";
+        let currentChartFilter = "week";
+        let aiStream = null;
+        let lastAIResult = null;
         
         // ĐƯỜNG LINK RENDER
         const BACKEND_URL = "https://dm4-farm-backend.onrender.com";
@@ -487,14 +547,18 @@
         }
 
         function loadHistory() {
-            fetch(`${BACKEND_URL}/api/history?farmer=${loggedInUser}`).then(res => res.json()).then(data => {
+            fetch(`${BACKEND_URL}/api/history?farmer=${loggedInUser}`)
+            .then(res => res.json())
+            .then(data => {
                 if(data.status === "success") {
-                    globalRecords = data.records;
+                    globalRecords = data.records || [];
                     renderHistoryTable(globalRecords);
-                    
-                    // Tự động kích hoạt vẽ biểu đồ Tuần
-                    const defaultBtn = document.getElementById('defaultFilterBtn');
-                    if(defaultBtn) updateChart('week', defaultBtn);
+
+                    // Giữ đúng bộ lọc người dùng đang chọn, không ép về 7 ngày sau mỗi lần reload
+                    const activeBtn = Array.from(document.querySelectorAll('.filter-btn'))
+                        .find(b => (b.getAttribute('onclick') || '').includes(`'${currentChartFilter}'`));
+
+                    updateChart(currentChartFilter || 'week', activeBtn || document.getElementById('defaultFilterBtn'));
                 }
             });
         }
@@ -635,7 +699,7 @@
 
             fetch(`${BACKEND_URL}/api/harvest`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ farmer: loggedInUser, ma_lo: maLo, flower_name: flowerName, ten_vuon: tenVuon, ngay_thu: ngayThuRaw, khu_vuc: khuVuc, weight: weight, gia_ban: giaBan, quality: selectedQuality, ghi_chu: ghiChu })
+                body: JSON.stringify({ farmer: loggedInUser, ma_lo: maLo, flower_name: flowerName, ten_vuon: tenVuon, ngay_thu: ngayThuRaw, khu_vuc: khuVuc, weight: weight, gia_ban: giaBan, quality: selectedQuality, ghi_chu: ghiChu, ai_type: lastAIResult ? lastAIResult.flower_type : "", ai_perimeter: lastAIResult ? lastAIResult.perimeter : null, ai_price: lastAIResult ? lastAIResult.price_display : "" })
             })
             .then(res => res.json()).then(data => {
                 btn.innerText = "KÝ TRÊN CLOUD & ĐẨY LÊN BLOCKCHAIN";
@@ -679,6 +743,168 @@
             document.getElementById("result-msg").style.display = "none";
         }
 
+
+
+        function showAIStatus(message, type = "info") {
+            const box = document.getElementById("aiStatus");
+            if(!box) return;
+            box.classList.add("show");
+            box.innerText = message;
+            if(type === "error") {
+                box.style.background = "#fee2e2";
+                box.style.color = "#ef4444";
+            } else if(type === "success") {
+                box.style.background = "rgba(16,185,129,0.12)";
+                box.style.color = "var(--primary)";
+            } else {
+                box.style.background = "#fef3c7";
+                box.style.color = "#d97706";
+            }
+        }
+
+        function setAIPreview(src, useVideo = false) {
+            const video = document.getElementById("aiVideo");
+            const img = document.getElementById("aiPreview");
+            const empty = document.getElementById("aiEmptyPreview");
+            if(useVideo) {
+                video.style.display = "block";
+                img.style.display = "none";
+                empty.style.display = "none";
+            } else if(src) {
+                img.src = src;
+                img.style.display = "block";
+                video.style.display = "none";
+                empty.style.display = "none";
+            } else {
+                video.style.display = "none";
+                img.style.display = "none";
+                empty.style.display = "flex";
+            }
+        }
+
+        async function analyzeAIFormData(formData) {
+            showAIStatus("Đang gửi ảnh lên backend để phân tích...", "info");
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/classify-flower`, {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await res.json().catch(() => ({}));
+                if(!res.ok || data.status !== "success") {
+                    throw new Error(data.message || "Backend không phân tích được ảnh.");
+                }
+                renderAIResult(data);
+                showAIStatus(data.detected ? "AI đã phân loại xong." : "AI chưa phát hiện rõ bó hoa trong ảnh.", data.detected ? "success" : "error");
+            } catch (err) {
+                showAIStatus("Lỗi AI: " + err.message, "error");
+            }
+        }
+
+        function renderAIResult(data) {
+            lastAIResult = data;
+            document.getElementById("aiType").innerText = data.flower_type || "UNDETECTED";
+            document.getElementById("aiQuality").innerText = data.quality || "N/A";
+            document.getElementById("aiPrice").innerText = data.price_display || "0 VNĐ";
+            document.getElementById("aiPerimeter").innerText = Math.round(Number(data.perimeter || 0)).toString();
+            const annotated = document.getElementById("aiAnnotated");
+            if(data.annotated_image) {
+                annotated.src = data.annotated_image;
+                annotated.style.display = "block";
+            } else {
+                annotated.style.display = "none";
+            }
+        }
+
+        async function handleAIUpload(event) {
+            const file = event.target.files && event.target.files[0];
+            if(!file) return;
+            if(!file.type.startsWith("image/")) {
+                showAIStatus("Vui lòng chọn file ảnh.", "error");
+                return;
+            }
+            setAIPreview(URL.createObjectURL(file), false);
+            const formData = new FormData();
+            formData.append("image", file);
+            await analyzeAIFormData(formData);
+        }
+
+        async function startAICamera() {
+            try {
+                if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error("Trình duyệt không hỗ trợ camera.");
+                }
+                aiStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+                const video = document.getElementById("aiVideo");
+                video.srcObject = aiStream;
+                setAIPreview(null, true);
+                showAIStatus("Camera đã bật. Đặt bó hoa vào khung rồi bấm Chụp & phân loại.", "success");
+            } catch (err) {
+                showAIStatus("Không mở được camera: " + err.message, "error");
+            }
+        }
+
+        function stopAICamera() {
+            if(aiStream) {
+                aiStream.getTracks().forEach(track => track.stop());
+                aiStream = null;
+            }
+            const video = document.getElementById("aiVideo");
+            if(video) video.srcObject = null;
+        }
+
+        function captureAIFrame() {
+            const video = document.getElementById("aiVideo");
+            if(!aiStream || !video || !video.videoWidth) {
+                showAIStatus("Bạn cần bật camera trước khi chụp.", "error");
+                return;
+            }
+            const canvas = document.getElementById("aiCanvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+            setAIPreview(dataUrl, false);
+            canvas.toBlob(blob => {
+                const formData = new FormData();
+                formData.append("image", blob, "capture.jpg");
+                analyzeAIFormData(formData);
+            }, "image/jpeg", 0.92);
+        }
+
+        function applyAIToHarvestForm() {
+            if(!lastAIResult || !lastAIResult.detected) {
+                alert("Chưa có kết quả AI hợp lệ để đưa vào phiếu.");
+                return;
+            }
+            const flowerSelect = document.getElementById("flowerType");
+            if(lastAIResult.flower_name) {
+                const exists = Array.from(flowerSelect.options).some(opt => opt.value === lastAIResult.flower_name);
+                if(exists) flowerSelect.value = lastAIResult.flower_name;
+            }
+
+            const priceNumber = Number(lastAIResult.price_vnd || 0);
+            const formattedPrice = priceNumber ? priceNumber.toLocaleString("vi-VN") : "";
+            const priceSelect = document.getElementById("giaBanSelect");
+            const priceCustom = document.getElementById("giaBanCustom");
+            const priceExists = Array.from(priceSelect.options).some(opt => opt.value === formattedPrice);
+            if(priceExists) {
+                priceSelect.value = formattedPrice;
+                priceCustom.style.display = "none";
+            } else if(priceNumber) {
+                priceSelect.value = "other";
+                priceCustom.style.display = "block";
+                priceCustom.value = priceNumber;
+            }
+
+            const q = lastAIResult.quality || "Loại 3";
+            const qualityBox = Array.from(document.querySelectorAll(".quality-box")).find(el => el.innerText.includes(q));
+            if(qualityBox) selectQuality(qualityBox, q);
+            switchTab('tab-input', Array.from(document.querySelectorAll('.menu-item')).find(el => el.innerText.includes('Khởi Tạo Phiếu')));
+            alert("Đã đưa kết quả AI vào phiếu. Bạn vẫn cần nhập mã lô, tên vườn, ngày thu hoạch, khu vực và số lượng bó.");
+        }
+
+
         function doForgotPassword() {
             const phone = document.getElementById("forgotPhone").value.trim(), newPass = document.getElementById("forgotNewPass").value;
             if(!phone || !newPass) return alert("Vui lòng điền đủ Số điện thoại và Mật khẩu mới!");
@@ -702,59 +928,132 @@
             });
         }
 
-        // FIX LỖI: DỰA VÀO NGÀY THU HOẠCH GỐC CHỨ KHÔNG DỰA VÀO NGÀY TẠO PHIẾU
+        // FIX LỖI: Biểu đồ "Lưu lượng ghi sổ Blockchain Real-time" phải ưu tiên thời gian ghi sổ thật (r.date),
+        // không dùng ngày thu hoạch (r.ngay_thu) làm thời gian chính.
         function updateChart(timeframe, btn) {
-            if(btn) { document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+            currentChartFilter = timeframe;
+
+            if(btn) {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
+
             if(!myChart) return;
-            const now = new Date(); let labels = [], dataPoints = [], agg = {}; 
-            
+
+            const now = new Date();
+            let labels = [];
+            let dataPoints = [];
+            let agg = {};
+
             function parseChartDate(r) {
-                let hDate = r.ngay_thu || r.date; 
-                if(!hDate || hDate.includes('cũ')) return new Date(0);
-                // Nếu YYYY-MM-DD
-                if(hDate.includes('-')) {
-                    let p = hDate.split('-'); return new Date(p[0], p[1]-1, p[2], 0, 0);
+                // Ưu tiên thời gian ghi sổ Blockchain/MongoDB.
+                // Nếu backend dùng field khác thì vẫn bắt được một số tên phổ biến.
+                let rawDate = r.date || r.created_at || r.createdAt || r.ngay_thu;
+
+                if(!rawDate || String(rawDate).includes('cũ')) return new Date(0);
+                rawDate = String(rawDate).trim();
+
+                // ISO: 2026-05-20T12:21:00.000Z
+                if(rawDate.includes('T')) {
+                    const isoDate = new Date(rawDate);
+                    if(!isNaN(isoDate.getTime())) return isoDate;
                 }
-                // Nếu DD/MM/YYYY
-                let parts = hDate.split(' ');
-                let d = parts[0].split('/');
-                let t = [0, 0];
-                // Lấy giờ từ transaction date để biểu đồ Hôm nay hiện đúng
-                if(parts[1]) {
-                    t = parts[1].split(':');
-                } else if (r.date && hDate === r.date.split(' ')[0]) {
-                    let dParts = r.date.split(' ');
-                    if(dParts[1]) t = dParts[1].split(':');
+
+                // YYYY-MM-DD hoặc YYYY-MM-DD HH:mm
+                if(rawDate.includes('-')) {
+                    const parts = rawDate.split(' ');
+                    const d = parts[0].split('-');
+                    const t = parts[1] ? parts[1].split(':') : [0, 0];
+
+                    if(d.length === 3) {
+                        return new Date(
+                            Number(d[0]),
+                            Number(d[1]) - 1,
+                            Number(d[2]),
+                            Number(t[0]) || 0,
+                            Number(t[1]) || 0
+                        );
+                    }
                 }
-                if(d.length === 3) return new Date(d[2], d[1]-1, d[0], t[0], t[1]);
+
+                // DD/MM/YYYY hoặc DD/MM/YYYY HH:mm
+                if(rawDate.includes('/')) {
+                    const parts = rawDate.split(' ');
+                    const d = parts[0].split('/');
+                    const t = parts[1] ? parts[1].split(':') : [0, 0];
+
+                    if(d.length === 3) {
+                        return new Date(
+                            Number(d[2]),
+                            Number(d[1]) - 1,
+                            Number(d[0]),
+                            Number(t[0]) || 0,
+                            Number(t[1]) || 0
+                        );
+                    }
+                }
+
                 return new Date(0);
             }
 
             if(timeframe === 'day') {
-                for(let i=0; i<=now.getHours(); i++) { let h = i.toString().padStart(2, '0') + ":00"; labels.push(h); agg[h] = 0; }
+                for(let i = 0; i <= now.getHours(); i++) {
+                    const h = i.toString().padStart(2, '0') + ":00";
+                    labels.push(h);
+                    agg[h] = 0;
+                }
+
                 globalRecords.forEach(r => {
-                    let d = parseChartDate(r);
-                    if(d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
-                        let h = d.getHours().toString().padStart(2, '0') + ":00";
-                        if(agg[h] !== undefined) agg[h] += r.weight;
+                    const d = parseChartDate(r);
+
+                    if(
+                        d.getDate() === now.getDate() &&
+                        d.getMonth() === now.getMonth() &&
+                        d.getFullYear() === now.getFullYear()
+                    ) {
+                        const h = d.getHours().toString().padStart(2, '0') + ":00";
+                        if(agg[h] !== undefined) {
+                            agg[h] += Number(r.weight) || 0;
+                        }
                     }
                 });
+
                 dataPoints = labels.map(l => agg[l]);
             } else {
-                let daysCount = (timeframe === 'week') ? 6 : 29;
+                const daysCount = timeframe === 'week' ? 6 : 29;
+
                 for(let i = daysCount; i >= 0; i--) {
-                    let d = new Date(now); d.setDate(d.getDate() - i);
-                    let dateStr = d.getDate().toString().padStart(2,'0') + '/' + (d.getMonth()+1).toString().padStart(2,'0');
-                    labels.push(dateStr); agg[dateStr] = 0;
+                    const d = new Date(now);
+                    d.setDate(d.getDate() - i);
+
+                    const dateStr =
+                        d.getDate().toString().padStart(2, '0') +
+                        '/' +
+                        (d.getMonth() + 1).toString().padStart(2, '0');
+
+                    labels.push(dateStr);
+                    agg[dateStr] = 0;
                 }
+
                 globalRecords.forEach(r => {
-                    let d = parseChartDate(r);
-                    let dateStr = d.getDate().toString().padStart(2,'0') + '/' + (d.getMonth()+1).toString().padStart(2,'0');
-                    if(agg[dateStr] !== undefined) agg[dateStr] += r.weight;
+                    const d = parseChartDate(r);
+
+                    const dateStr =
+                        d.getDate().toString().padStart(2, '0') +
+                        '/' +
+                        (d.getMonth() + 1).toString().padStart(2, '0');
+
+                    if(agg[dateStr] !== undefined) {
+                        agg[dateStr] += Number(r.weight) || 0;
+                    }
                 });
+
                 dataPoints = labels.map(l => agg[l]);
             }
-            myChart.data.labels = labels; myChart.data.datasets[0].data = dataPoints; myChart.update();
+
+            myChart.data.labels = labels;
+            myChart.data.datasets[0].data = dataPoints;
+            myChart.update();
         }
     </script>
 </body>

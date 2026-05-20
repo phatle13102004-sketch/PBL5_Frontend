@@ -469,7 +469,7 @@
         let currentChartFilter = "week";
         let aiStream = null;
         let lastAIResult = null;
-        let scanInterval = null;
+        let isScanning = false;
         // ĐƯỜNG LINK RENDER
         const BACKEND_URL = "https://dm4-farm-backend.onrender.com";
 
@@ -1022,41 +1022,62 @@ function sendData() {
         }
 
         async function startAICamera() {
-    try {
-        if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            throw new Error("Trình duyệt không hỗ trợ camera.");
-        }
-        aiStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-        const video = document.getElementById("aiVideo");
-        video.srcObject = aiStream;
-        setAIPreview(null, true);
-        showAIStatus("Camera đã bật. Đang tự động quét...", "success");
-        
-        // TỰ ĐỘNG QUÉT: Gọi hàm captureAIFrame mỗi 1000ms (1 giây)
-        if(scanInterval) clearInterval(scanInterval);
-        scanInterval = setInterval(() => {
-            if (aiStream) captureAIFrame();
-        }, 1000);
+            try {
+                if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error("Trình duyệt không hỗ trợ camera.");
+                }
+                aiStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+                const video = document.getElementById("aiVideo");
+                video.srcObject = aiStream;
+                setAIPreview(null, true); // Giữ cho video không bị chớp tắt
+                
+                showAIStatus("Đang quét tự động real-time...", "success");
 
-    } catch (err) {
-        showAIStatus("Không mở được camera: " + err.message, "error");
-    }
-}
+                isScanning = true;
+                scanLoop(); // Bắt đầu vòng lặp quét
+            } catch (err) {
+                showAIStatus("Không mở được camera: " + err.message, "error");
+            }
+        }
 
 function stopAICamera() {
+            isScanning = false; // Ngắt vòng lặp
             if(aiStream) {
                 aiStream.getTracks().forEach(track => track.stop());
                 aiStream = null;
             }
             const video = document.getElementById("aiVideo");
             if(video) video.srcObject = null;
-            
-            // DỪNG VÒNG LẶP QUÉT KHI TẮT CAM
-            if(scanInterval) {
-                clearInterval(scanInterval);
-                scanInterval = null;
-            }
         }
+// VÒNG LẶP QUÉT THÔNG MINH (Chống nghẽn mạng và giật lag)
+        async function scanLoop() {
+            if (!isScanning || !aiStream) return;
+
+            const video = document.getElementById("aiVideo");
+            if (video && video.videoWidth) {
+                const canvas = document.getElementById("aiCanvas");
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Nén ảnh chất lượng 0.7 và đợi Backend trả kết quả mới quét tiếp
+                await new Promise(resolve => {
+                    canvas.toBlob(async (blob) => {
+                        const formData = new FormData();
+                        formData.append("image", blob, "capture.jpg");
+                        try {
+                            await analyzeAIFormData(formData); 
+                        } catch(e) {}
+                        resolve();
+                    }, "image/jpeg", 0.7); 
+                });
+            }
+            
+            // Chờ 500ms rồi tiếp tục quét khung hình tiếp theo
+            setTimeout(scanLoop, 500);
+        }
+        // Hàm này giữ lại để dùng cho nút "Chụp & phân loại" nếu người dùng muốn bấm tay
         function captureAIFrame() {
             const video = document.getElementById("aiVideo");
             if(!aiStream || !video || !video.videoWidth) {
@@ -1068,15 +1089,12 @@ function stopAICamera() {
             canvas.height = video.videoHeight;
             const ctx = canvas.getContext("2d");
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-            setAIPreview(dataUrl, false);
             canvas.toBlob(blob => {
                 const formData = new FormData();
                 formData.append("image", blob, "capture.jpg");
                 analyzeAIFormData(formData);
             }, "image/jpeg", 0.92);
         }
-
         function applyAIToHarvestForm() {
             if(!lastAIResult || !lastAIResult.detected) {
                 alert("Chưa có kết quả AI hợp lệ để đưa vào phiếu.");

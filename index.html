@@ -526,7 +526,7 @@ function escapeHTML(value) {
 
         function refreshDashboardStats() {
             if(!loggedInUser) return Promise.resolve();
-            return fetch(`${BACKEND_URL}/api/stats?farmer=${encodeURIComponent(loggedInUser)}`)
+            return fetch(`${BACKEND_URL}/api/stats?farmer=${encodeURIComponent(loggedInUser)}&t=${Date.now()}`, { cache: "no-store" })
                 .then(r => r.json())
                 .then(stats => {
                     if(stats.status === "error") throw new Error(stats.message || "Không tải được thống kê.");
@@ -582,11 +582,12 @@ function escapeHTML(value) {
         
 function loadHistory() {
             if(!loggedInUser) return;
-            fetch(`${BACKEND_URL}/api/history?farmer=${encodeURIComponent(loggedInUser)}`)
+            fetch(`${BACKEND_URL}/api/history?farmer=${encodeURIComponent(loggedInUser)}&t=${Date.now()}`, { cache: "no-store" })
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
                     globalRecords = data.records || [];
+                    console.log("Loaded history", { count: globalRecords.length, aliases: data.aliases, db: data.db_name, version: data.app_version });
                     renderHistoryTable(globalRecords);
 
                     const activeBtn = Array.from(document.querySelectorAll('.filter-btn'))
@@ -667,7 +668,9 @@ function renderHistoryTable(records) {
             const filtered = globalRecords.filter(r => 
                 (r.ma_lo && r.ma_lo.toLowerCase().includes(keyword)) ||
                 (r.ten_vuon && r.ten_vuon.toLowerCase().includes(keyword)) ||
-                (r.flower_type && r.flower_type.toLowerCase().includes(keyword))
+                (r.flower_type && r.flower_type.toLowerCase().includes(keyword)) ||
+                (r.flower_name && r.flower_name.toLowerCase().includes(keyword)) ||
+                (r.tx_hash && r.tx_hash.toLowerCase().includes(keyword))
             );
             renderHistoryTable(filtered);
         }
@@ -785,6 +788,7 @@ function sendData() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     farmer: loggedInUser,
+                    farmer_display: document.getElementById("farmerName").value,
                     ma_lo: maLo,
                     flower_name: flowerName,
                     ten_vuon: tenVuon,

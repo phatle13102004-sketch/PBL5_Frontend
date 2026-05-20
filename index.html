@@ -514,29 +514,60 @@
             .then(res => res.json()).then(data => { if(data.status==="error") throw new Error(data.message); localStorage.setItem("dm4_session", JSON.stringify(data)); setupDashboard(data); }).catch(e => { alert(e.message); btn.innerText = "XÁC THỰC VÀO HỆ THỐNG"; });
         }
 
-        function setupDashboard(data) {
-            loggedInUser = data.username;
-            document.getElementById("topbarName").innerText = data.fullname;
-            document.getElementById("farmerName").value = data.fullname;
-            document.getElementById("modalProfileName").innerText = data.username;
-            document.getElementById("modalFullname").innerText = data.fullname;
-            document.getElementById("modalLocation").innerText = data.location;
-            document.getElementById("modalJoinDate").innerText = data.join_date;
-            document.getElementById("modalFarmerId").innerText = "#" + data.farmer_id;
-            document.getElementById("avatarIcon").innerText = data.fullname.charAt(0).toUpperCase();
+        
+function escapeHTML(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
 
-            fetch(`${BACKEND_URL}/api/stats?farmer=${loggedInUser}`).then(r => r.json()).then(stats => {
-                document.getElementById("realTotalWeight").innerText = stats.total_weight;
-                let passRate = (stats.total_weight>0 && stats.loai1_weight!==undefined) ? (stats.loai1_weight / stats.total_weight) * 100 : 0;
-                document.getElementById("passRate").innerText = passRate.toFixed(1) + " %";
-                
-                // FIX LỖI BIỂU ĐỒ: Phải KHỞI TẠO biểu đồ TRƯỚC khi gọi Lịch sử
+        function refreshDashboardStats() {
+            if(!loggedInUser) return Promise.resolve();
+            return fetch(`${BACKEND_URL}/api/stats?farmer=${encodeURIComponent(loggedInUser)}`)
+                .then(r => r.json())
+                .then(stats => {
+                    if(stats.status === "error") throw new Error(stats.message || "Không tải được thống kê.");
+                    const total = Number(stats.total_weight || 0);
+                    const loai1 = Number(stats.loai1_weight || 0);
+                    document.getElementById("realTotalWeight").innerText = total;
+                    let passRate = total > 0 ? (loai1 / total) * 100 : 0;
+                    document.getElementById("passRate").innerText = passRate.toFixed(1) + " %";
+                })
+                .catch(err => {
+                    console.warn("Stats error:", err);
+                });
+        }
+
+        function setupDashboard(data) {
+            loggedInUser = data.username || loggedInUser;
+            const safeFullName = data.fullname || document.getElementById("farmerName").value || loggedInUser || "Admin";
+            const safeLocation = data.location || document.getElementById("modalLocation").innerText || "N/A";
+            const safeJoinDate = data.join_date || document.getElementById("modalJoinDate").innerText || "N/A";
+            const safeFarmerId = data.farmer_id || document.getElementById("modalFarmerId").innerText.replace("#", "") || "FAR_0000";
+
+            document.getElementById("topbarName").innerText = safeFullName;
+            document.getElementById("farmerName").value = safeFullName;
+            document.getElementById("modalProfileName").innerText = loggedInUser;
+            document.getElementById("modalFullname").innerText = safeFullName;
+            document.getElementById("modalLocation").innerText = safeLocation;
+            document.getElementById("modalJoinDate").innerText = safeJoinDate;
+            document.getElementById("modalFarmerId").innerText = "#" + safeFarmerId;
+            document.getElementById("avatarIcon").innerText = safeFullName.charAt(0).toUpperCase();
+
+            refreshDashboardStats().finally(() => {
+                // FIX: khởi tạo chart trước khi tải lịch sử
                 initChart();
                 loadHistory();
-                loadWeather(); 
-                
+                loadWeather();
+
                 document.getElementById("login-screen").style.opacity = "0";
-                setTimeout(() => { document.getElementById("login-screen").style.display = "none"; document.getElementById("app").style.opacity = "1"; }, 400);
+                setTimeout(() => {
+                    document.getElementById("login-screen").style.display = "none";
+                    document.getElementById("app").style.opacity = "1";
+                }, 400);
             });
         }
 
@@ -548,55 +579,82 @@
             return ngayThu || 'Chưa xác định';
         }
 
-        function loadHistory() {
-            fetch(`${BACKEND_URL}/api/history?farmer=${loggedInUser}`)
+        
+function loadHistory() {
+            if(!loggedInUser) return;
+            fetch(`${BACKEND_URL}/api/history?farmer=${encodeURIComponent(loggedInUser)}`)
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
                     globalRecords = data.records || [];
                     renderHistoryTable(globalRecords);
 
-                    // Giữ đúng bộ lọc người dùng đang chọn, không ép về 7 ngày sau mỗi lần reload
                     const activeBtn = Array.from(document.querySelectorAll('.filter-btn'))
                         .find(b => (b.getAttribute('onclick') || '').includes(`'${currentChartFilter}'`));
 
                     updateChart(currentChartFilter || 'week', activeBtn || document.getElementById('defaultFilterBtn'));
+                } else {
+                    throw new Error(data.message || "Không tải được lịch sử.");
+                }
+            })
+            .catch(err => {
+                console.error("History error:", err);
+                const tbody = document.getElementById("historyTableBody");
+                if(tbody) {
+                    tbody.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:25px; color:var(--danger);">Không tải được lịch sử: ${escapeHTML(err.message)}</div>`;
                 }
             });
         }
 
         // HÀM IN DANH SÁCH THẺ HOA (Tách riêng để làm Thanh tìm kiếm)
-        function renderHistoryTable(records) {
+        
+function renderHistoryTable(records) {
             const tbody = document.getElementById("historyTableBody");
             tbody.innerHTML = "";
-            if(records.length === 0) {
+            if(!records || records.length === 0) {
                 tbody.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 25px; color: var(--text-muted);">Không tìm thấy kết quả nào.</div>`;
                 return;
             }
+
             records.forEach((r) => {
-                let index = globalRecords.indexOf(r); // Lấy đúng ID gốc để bấm chi tiết
-                let isLoai1 = r.flower_type.includes("Loại 1");
-                let flowerNameOnly = r.flower_type.split(" - ")[0] || r.flower_type;
-                
-                // Thẻ sẽ chỉ hiện Ngày Thu Hoạch gốc của nông dân gõ
-                let dateThuHoach = formatDateDisplay(r.ngay_thu);
-                // Nhưng cũng show kèm giờ phút thật sự Blockchain ghi lại
-                let dateGhiSo = r.date || 'Hệ thống cũ';
-                
+                let index = globalRecords.indexOf(r);
+                if(index < 0) index = 0;
+
+                const flowerType = r.flower_type || `${r.flower_name || "Cúc Đại Đóa"} - ${r.quality || "Loại 3"}`;
+                const quality = r.quality || (flowerType.includes("Loại 1") ? "Loại 1" : (flowerType.includes("Loại 2") ? "Loại 2" : "Loại 3"));
+                const isLoai1 = quality === "Loại 1";
+                const flowerNameOnly = r.flower_name || flowerType.split(" - ")[0] || "Cúc Đại Đóa";
+                const dateThuHoach = formatDateDisplay(r.ngay_thu);
+                const dateGhiSo = r.date || (r.recorded_at ? new Date(r.recorded_at).toLocaleString("vi-VN") : "Hệ thống cũ");
+
+                const chainStatus = r.blockchain_status || (r.tx_hash ? "confirmed" : "old");
+                let verifyText = "● Đã xác thực";
+                let verifyStyle = "";
+                if(chainStatus === "pending" || chainStatus === "creating") {
+                    verifyText = "⏳ Đang xác nhận";
+                    verifyStyle = "background:#fef3c7; color:#d97706;";
+                } else if(chainStatus === "failed") {
+                    verifyText = "⚠️ Blockchain lỗi";
+                    verifyStyle = "background:#fee2e2; color:#ef4444;";
+                } else if(chainStatus === "old") {
+                    verifyText = "● Dữ liệu cũ";
+                    verifyStyle = "background:#f1f5f9; color:var(--text-muted);";
+                } else if(!isLoai1) {
+                    verifyStyle = "background:#f1f5f9; color:var(--text-muted);";
+                }
+
                 tbody.innerHTML += `
                     <div class="lot-card">
                         <div class="lot-header">
-                            <span class="lot-id">#${r.ma_lo || 'LOT_'+(index+1)}</span>
-                            <span class="badge green" style="${!isLoai1 ? 'background:#f1f5f9; color:var(--text-muted)' : ''}">● Đã xác thực</span>
+                            <span class="lot-id">#${escapeHTML(r.ma_lo || 'LOT_'+(index+1))}</span>
+                            <span class="badge green" style="${verifyStyle}">${verifyText}</span>
                         </div>
-                        <div class="lot-title">${flowerNameOnly}</div>
-                        <div class="lot-info"><svg viewBox="0 0 24 24" style="width:14px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${r.ten_vuon || 'Vườn cục bộ'}</div>
-                        
-                        <div class="lot-info" style="color: var(--text-main); font-weight: 600;"><svg viewBox="0 0 24 24" style="width:14px; color:var(--text-muted)"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Thu hoạch: ${dateThuHoach}</div>
-                        <div class="lot-info" style="font-size: 12px; margin-bottom: 12px;"><svg viewBox="0 0 24 24" style="width:14px; opacity:0"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> ⏱️ Ghi sổ lúc: ${dateGhiSo}</div>
-                        
-                        <div class="lot-info"><svg viewBox="0 0 24 24" style="width:14px"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg> ${r.weight} bó</div>
-                        <span class="badge ${isLoai1 ? 'green' : ''}" style="margin-top:10px;">${isLoai1 ? 'Loại 1' : (r.flower_type.includes("Loại 2") ? 'Loại 2' : 'Loại 3')}</span>
+                        <div class="lot-title">${escapeHTML(flowerNameOnly)}</div>
+                        <div class="lot-info"><svg viewBox="0 0 24 24" style="width:14px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${escapeHTML(r.ten_vuon || 'Vườn cục bộ')}</div>
+                        <div class="lot-info" style="color: var(--text-main); font-weight: 600;"><svg viewBox="0 0 24 24" style="width:14px; color:var(--text-muted)"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Thu hoạch: ${escapeHTML(dateThuHoach)}</div>
+                        <div class="lot-info" style="font-size: 12px; margin-bottom: 12px;"><svg viewBox="0 0 24 24" style="width:14px; opacity:0"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> ⏱️ Ghi sổ lúc: ${escapeHTML(dateGhiSo)}</div>
+                        <div class="lot-info"><svg viewBox="0 0 24 24" style="width:14px"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg> ${escapeHTML(r.weight || 0)} bó</div>
+                        <span class="badge ${isLoai1 ? 'green' : ''}" style="margin-top:10px;">${escapeHTML(quality)}</span>
                         <button class="btn-outline" onclick="showLotDetail(${index})">Xem chi tiết Lô Hoa</button>
                     </div>
                 `;
@@ -614,34 +672,55 @@
             renderHistoryTable(filtered);
         }
 
-        function showLotDetail(index) {
+        
+function showLotDetail(index) {
             const r = globalRecords[index];
-            document.getElementById("dt_flower").innerText = r.flower_name || r.flower_type.split(" - ")[0];
+            if(!r) return alert("Không tìm thấy dữ liệu lô hoa. Vui lòng tải lại lịch sử.");
+
+            const flowerType = r.flower_type || `${r.flower_name || "Cúc Đại Đóa"} - ${r.quality || "Loại 3"}`;
+            const flowerNameOnly = r.flower_name || flowerType.split(" - ")[0] || "Cúc Đại Đóa";
+
+            document.getElementById("dt_flower").innerText = flowerNameOnly;
             document.getElementById("dt_malo").innerText = "#" + (r.ma_lo || 'LOT_'+(index+1));
-            
-            // Xử lý chất lượng
-            let qual = "Loại 3";
-            if(r.flower_type.includes("Loại 1")) qual = "Loại 1";
-            if(r.flower_type.includes("Loại 2")) qual = "Loại 2";
-            document.getElementById("dt_loai").innerText = r.quality || qual;
-            
+
+            let qual = r.quality || "Loại 3";
+            if(!r.quality) {
+                if(flowerType.includes("Loại 1")) qual = "Loại 1";
+                if(flowerType.includes("Loại 2")) qual = "Loại 2";
+            }
+            document.getElementById("dt_loai").innerText = qual;
+
             document.getElementById("dt_vuon").innerText = r.ten_vuon || "Vườn cục bộ";
             document.getElementById("dt_date").innerText = formatDateDisplay(r.ngay_thu);
-            document.getElementById("dt_realtime").innerText = r.date || "Hệ thống cũ"; // Thêm thời gian Blockchain
-            
+            document.getElementById("dt_realtime").innerText = r.date || (r.recorded_at ? new Date(r.recorded_at).toLocaleString("vi-VN") : "Hệ thống cũ");
+
             document.getElementById("dt_loc").innerText = r.khu_vuc || "Chưa xác định";
-            document.getElementById("dt_qty").innerText = r.weight + " bó";
+            document.getElementById("dt_qty").innerText = (r.weight || 0) + " bó";
             document.getElementById("dt_gia").innerText = r.gia_ban ? r.gia_ban + " đ/bó" : "N/A";
 
             const btnLink = document.getElementById("dt_link");
             const oldMsg = document.getElementById("dt_old_msg");
-            if(r.tx_hash && r.tx_hash.startsWith("0x")) {
+            const txHash = r.tx_hash || "";
+            const chainStatus = r.blockchain_status || (txHash ? "confirmed" : "old");
+
+            if(txHash && txHash.startsWith("0x") && !txHash.startsWith("0xmock")) {
                 btnLink.style.display = "block";
-                btnLink.href = "https://sepolia.etherscan.io/tx/" + r.tx_hash;
-                oldMsg.style.display = "none";
+                btnLink.href = "https://sepolia.etherscan.io/tx/" + txHash;
+                oldMsg.style.display = "block";
+                oldMsg.style.color = chainStatus === "pending" ? "#d97706" : (chainStatus === "failed" ? "#ef4444" : "var(--text-muted)");
+                oldMsg.innerText = chainStatus === "pending"
+                    ? "Transaction đã gửi nhưng đang chờ Sepolia xác nhận."
+                    : (chainStatus === "failed" ? "Transaction Blockchain thất bại. Kiểm tra lại trên Etherscan." : "Transaction Hash: " + txHash);
+            } else if(txHash && txHash.startsWith("0xmock")) {
+                btnLink.style.display = "none";
+                oldMsg.style.display = "block";
+                oldMsg.style.color = "#d97706";
+                oldMsg.innerText = "Đây là mã mô phỏng nội bộ, không có trên Etherscan.";
             } else {
                 btnLink.style.display = "none";
                 oldMsg.style.display = "block";
+                oldMsg.style.color = "var(--text-muted)";
+                oldMsg.innerText = "Dữ liệu cũ hoặc chưa có TxHash.";
             }
 
             openModal('lotDetailModal');
@@ -675,14 +754,15 @@
             });
         }
 
-        function sendData() {
+        
+function sendData() {
             const maLo = document.getElementById("maLo").value.trim();
             const flowerName = document.getElementById("flowerType").value;
             const tenVuon = document.getElementById("tenVuon").value.trim();
-            const ngayThuRaw = document.getElementById("ngayThu").value.trim(); // Giờ nông dân gõ DD/MM/YYYY
+            const ngayThuRaw = document.getElementById("ngayThu").value.trim();
             const khuVuc = document.getElementById("khuVuc").value.trim();
             const weight = parseInt(document.getElementById("weight").value);
-            
+
             let giaBan = document.getElementById("giaBanSelect").value;
             if(giaBan === "other") { giaBan = document.getElementById("giaBanCustom").value.trim(); }
 
@@ -696,35 +776,106 @@
             }
             if(weight <= 0) { msgBox.style.display = "block"; msgBox.style.background = "#fee2e2"; msgBox.style.color = "#ef4444"; msgBox.innerText = "Sản lượng phải > 0!"; return; }
 
-            btn.innerText = "ĐANG TẠO CHỮ KÝ SỐ VÀ ĐẨY LÊN NODE..."; 
-            msgBox.style.display = "block"; msgBox.style.background = "#fef3c7"; msgBox.style.color = "#d97706"; msgBox.innerText = "⏳ Đang đàm phán phí Gas và gửi Transaction...";
+            btn.disabled = true;
+            btn.innerText = "ĐANG LƯU CLOUD VÀ CHỜ BLOCKCHAIN..."; 
+            msgBox.style.display = "block"; msgBox.style.background = "#fef3c7"; msgBox.style.color = "#d97706"; msgBox.innerText = "⏳ Đang lưu MongoDB, gửi transaction và chờ Sepolia xác nhận...";
 
             fetch(`${BACKEND_URL}/api/harvest`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ farmer: loggedInUser, ma_lo: maLo, flower_name: flowerName, ten_vuon: tenVuon, ngay_thu: ngayThuRaw, khu_vuc: khuVuc, weight: weight, gia_ban: giaBan, quality: selectedQuality, ghi_chu: ghiChu, ai_type: lastAIResult ? lastAIResult.flower_type : "", ai_perimeter: lastAIResult ? lastAIResult.perimeter : null, ai_price: lastAIResult ? lastAIResult.price_display : "" })
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    farmer: loggedInUser,
+                    ma_lo: maLo,
+                    flower_name: flowerName,
+                    ten_vuon: tenVuon,
+                    ngay_thu: ngayThuRaw,
+                    khu_vuc: khuVuc,
+                    weight: weight,
+                    gia_ban: giaBan,
+                    quality: selectedQuality,
+                    ghi_chu: ghiChu,
+                    ai_type: lastAIResult ? lastAIResult.flower_type : "",
+                    ai_perimeter: lastAIResult ? lastAIResult.perimeter : null,
+                    ai_price: lastAIResult ? lastAIResult.price_display : ""
+                })
             })
-            .then(res => res.json()).then(data => {
+            .then(async res => {
+                const data = await res.json().catch(() => ({}));
+                if(!res.ok || data.status === "error") {
+                    const cloudNote = data.cloud_saved ? " Phiếu đã được lưu Cloud nhưng Blockchain lỗi." : "";
+                    throw new Error((data.message || "Không tạo được phiếu.") + cloudNote);
+                }
+                return data;
+            })
+            .then(data => {
+                const txHash = data.tx_hash || (data.message && data.message.includes("TxHash: ") ? data.message.split("TxHash: ")[1] : "");
+                const txStatus = data.tx_status || data.blockchain_status || "pending";
+                const chainMode = data.blockchain_mode || "real";
+
                 btn.innerText = "KÝ TRÊN CLOUD & ĐẨY LÊN BLOCKCHAIN";
-                if(data.status === "success") {
-                    let txHash = data.message.split("TxHash: ")[1];
-                    document.getElementById("form-view").style.display = "none";
-                    document.getElementById("success-view").style.display = "block";
+                btn.disabled = false;
+                msgBox.style.display = "none";
 
-                    document.getElementById("sv_flower").innerText = flowerName;
-                    document.getElementById("sv_malo").innerText = "#" + maLo;
-                    document.getElementById("sv_loai").innerText = selectedQuality;
-                    document.getElementById("sv_vuon").innerText = tenVuon;
-                    document.getElementById("sv_farmer").innerText = document.getElementById("farmerName").value;
-                    document.getElementById("sv_date").innerText = ngayThuRaw;
-                    document.getElementById("sv_loc").innerText = khuVuc;
-                    document.getElementById("sv_qty").innerText = weight + " bó";
-                    document.getElementById("sv_gia").innerText = giaBan + " đ/bó";
-                    document.getElementById("sv_hash").innerText = txHash;
-                    document.getElementById("sv_link").href = "https://sepolia.etherscan.io/tx/" + txHash;
+                document.getElementById("form-view").style.display = "none";
+                document.getElementById("success-view").style.display = "block";
 
-                    // Ngầm cập nhật lại Dashboard
-                    setupDashboard({username: loggedInUser, fullname: document.getElementById("farmerName").value, location: khuVuc, farmer_id: document.getElementById("modalFarmerId").innerText.replace("#", "")});
-                } else { msgBox.style.background = "#fee2e2"; msgBox.style.color = "#ef4444"; msgBox.innerText = "Lỗi Blockchain: " + data.message; }
+                const bannerTitle = document.querySelector("#success-view .success-banner h2");
+                const bannerDesc = document.querySelector("#success-view .success-banner p");
+                const bannerBadge = document.querySelector("#success-view .success-banner .badge.green");
+
+                if(chainMode === "mock") {
+                    bannerTitle.innerText = "Đã lưu Cloud ở chế độ mô phỏng";
+                    bannerDesc.innerText = "Phiếu đã lưu MongoDB. TxHash là mã mock nên không tồn tại trên Etherscan.";
+                    bannerBadge.innerText = "● Mock Mode";
+                } else if(txStatus === "confirmed") {
+                    bannerTitle.innerText = "Tính toàn vẹn dữ liệu: Hợp lệ";
+                    bannerDesc.innerText = "Transaction đã được Sepolia xác nhận. Phiếu ghi sổ đã đồng bộ Cloud và Blockchain.";
+                    bannerBadge.innerText = "● Đã xác thực";
+                } else {
+                    bannerTitle.innerText = "Đã lưu Cloud, đang chờ Blockchain";
+                    bannerDesc.innerText = "Transaction đã gửi lên Sepolia nhưng còn Pending. Vui lòng chờ thêm hoặc kiểm tra lại bằng nút Etherscan.";
+                    bannerBadge.innerText = "⏳ Đang xác nhận";
+                }
+
+                document.getElementById("sv_flower").innerText = flowerName;
+                document.getElementById("sv_malo").innerText = "#" + maLo;
+                document.getElementById("sv_loai").innerText = selectedQuality;
+                document.getElementById("sv_vuon").innerText = tenVuon;
+                document.getElementById("sv_farmer").innerText = document.getElementById("farmerName").value;
+                document.getElementById("sv_date").innerText = ngayThuRaw;
+                document.getElementById("sv_loc").innerText = khuVuc;
+                document.getElementById("sv_qty").innerText = weight + " bó";
+                document.getElementById("sv_gia").innerText = giaBan + " đ/bó";
+                document.getElementById("sv_hash").innerText = txHash || "Chưa có TxHash";
+
+                const svLink = document.getElementById("sv_link");
+                if(txHash && txHash.startsWith("0x") && !txHash.startsWith("0xmock")) {
+                    svLink.style.display = "block";
+                    svLink.href = "https://sepolia.etherscan.io/tx/" + txHash;
+                } else {
+                    svLink.style.display = "none";
+                }
+
+                if(data.record) {
+                    globalRecords = [data.record, ...globalRecords.filter(r => r._id !== data.record._id)];
+                    renderHistoryTable(globalRecords);
+                    updateChart(currentChartFilter || "week", document.querySelector(".filter-btn.active"));
+                }
+
+                refreshDashboardStats();
+                // Gọi lại history từ MongoDB để đảm bảo mã hash mới xuất hiện trong Xem chi tiết
+                setTimeout(loadHistory, 800);
+            })
+            .catch(err => {
+                btn.innerText = "KÝ TRÊN CLOUD & ĐẨY LÊN BLOCKCHAIN";
+                btn.disabled = false;
+                msgBox.style.display = "block";
+                msgBox.style.background = "#fee2e2";
+                msgBox.style.color = "#ef4444";
+                msgBox.innerText = "Lỗi tạo phiếu: " + err.message;
+                // Nếu backend báo đã lưu Cloud nhưng Blockchain lỗi, tải lại lịch sử để thấy phiếu lỗi/pending.
+                loadHistory();
+                refreshDashboardStats();
             });
         }
 
@@ -786,15 +937,35 @@
 
         async function analyzeAIFormData(formData) {
             showAIStatus("Đang gửi ảnh lên backend để phân tích...", "info");
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
+
             try {
                 const res = await fetch(`${BACKEND_URL}/api/classify-flower`, {
                     method: "POST",
-                    body: formData
+                    body: formData,
+                    signal: controller.signal
                 });
-                const data = await res.json().catch(() => ({}));
-                if(!res.ok || data.status !== "success") {
-                    throw new Error(data.message || "Backend không phân tích được ảnh.");
+
+                clearTimeout(timeoutId);
+
+                const rawText = await res.text();
+                let data = {};
+                try {
+                    data = rawText ? JSON.parse(rawText) : {};
+                } catch(e) {
+                    throw new Error(`Backend trả về dữ liệu không phải JSON. HTTP ${res.status}. Nội dung: ${rawText.slice(0, 180)}`);
                 }
+
+                if(!res.ok || data.status === "error") {
+                    const serverMessage = data.message || "Không có message từ backend.";
+                    const hint = res.status === 404
+                        ? "Backend đang chạy bản cũ, chưa có /api/classify-flower. Hãy thay app.py + requirements.txt rồi deploy lại Render."
+                        : "Mở Render Logs để xem lỗi import cv2/numpy hoặc lỗi đọc ảnh.";
+                    throw new Error(`HTTP ${res.status}. ${serverMessage} ${hint}`);
+                }
+
                 renderAIResult(data);
                 if(data.detected) {
                     const conf = data.confidence ? ` Độ tin cậy: ${Math.round(Number(data.confidence) * 100)}%.` : "";
@@ -802,10 +973,15 @@
                 } else {
                     const area = data.area_ratio !== undefined ? ` Area: ${(Number(data.area_ratio) * 100).toFixed(1)}%.` : "";
                     const mask = data.mask_ratio !== undefined ? ` Mask: ${(Number(data.mask_ratio) * 100).toFixed(1)}%.` : "";
-                    showAIStatus("AI chưa phát hiện rõ bó hoa. Hãy đưa hoa vào gần camera hơn, dùng nền ít vàng/trắng và đủ sáng." + area + mask, "error");
+                    showAIStatus("Backend đã đọc được ảnh, nhưng chưa phát hiện rõ bó hoa." + area + mask + " Hãy đưa hoa gần camera hơn, dùng nền tương phản và đủ sáng.", "error");
                 }
             } catch (err) {
-                showAIStatus("Lỗi AI: " + err.message, "error");
+                clearTimeout(timeoutId);
+                if(err.name === "AbortError") {
+                    showAIStatus("Lỗi AI: Backend phản hồi quá lâu. Render có thể đang cold start hoặc endpoint bị treo.", "error");
+                } else {
+                    showAIStatus("Lỗi AI: " + err.message, "error");
+                }
             }
         }
 

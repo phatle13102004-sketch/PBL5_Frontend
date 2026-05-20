@@ -280,10 +280,12 @@
                             <div class="form-group">
                                 <label>Loại chất lượng</label>
                                 <div class="quality-selector">
-                                    <div class="quality-box active" onclick="selectQuality(this, 'Loại 1')"><b>Loại 1</b><br><span style="font-size: 12px; font-weight: normal;">Đạt chuẩn Quốc tế</span></div>
-                                    <div class="quality-box" onclick="selectQuality(this, 'Loại 2')"><b>Loại 2</b><br><span style="font-size: 12px; font-weight: normal;">Thị trường Nội địa</span></div>
+                                    <div class="quality-box active" onclick="selectQuality(this, 'Loại 1')"><b>Loại 1</b><br><span style="font-size: 12px; font-weight: normal;">Cao cấp</span></div>
+                                    <div class="quality-box" onclick="selectQuality(this, 'Loại 2')"><b>Loại 2</b><br><span style="font-size: 12px; font-weight: normal;">Tiêu chuẩn</span></div>
+                                    <div class="quality-box" onclick="selectQuality(this, 'Loại 3')"><b>Loại 3</b><br><span style="font-size: 12px; font-weight: normal;">Cơ bản</span></div>
                                 </div>
                             </div>
+                            
                             <div class="form-group" style="margin-top: 20px;">
                                 <label>Ghi chú</label>
                                 <textarea id="ghiChu" class="input-vip" style="height: 80px;" placeholder="Ghi chú thêm về lô hoa..."></textarea>
@@ -490,7 +492,6 @@
                     data.records.forEach((r, index) => {
                         let isLoai1 = r.flower_type.includes("Loại 1");
                         let flowerNameOnly = r.flower_type.split(" - ")[0] || r.flower_type;
-                        // SỬA 4: HIỂN THỊ THỜI GIAN THỰC ĐÃ CÓ (GIỜ:PHÚT) RÚT TỪ BACKEND R.DATE
                         let timeDisplay = r.date || 'Hệ thống cũ';
                         
                         tbody.innerHTML += `
@@ -522,7 +523,6 @@
             document.getElementById("dt_loai").innerText = r.quality || (r.flower_type.includes("Loại 1") ? "Loại 1" : "Loại 2");
             document.getElementById("dt_vuon").innerText = r.ten_vuon || "Vườn cục bộ";
             
-            // Format ngày thu hoạch về DD/MM/YYYY cho form chi tiết
             let dateVal = "N/A";
             if(r.ngay_thu && r.ngay_thu.includes("-")) {
                 let p = r.ngay_thu.split("-");
@@ -581,12 +581,10 @@
             const flowerName = document.getElementById("flowerType").value;
             const tenVuon = document.getElementById("tenVuon").value.trim();
             
-            // Lấy giá trị ngày thu hoạch chuẩn YYYY-MM-DD từ input date và format lại thành DD/MM/YYYY để hiển thị
             let ngayThuRaw = document.getElementById("ngayThu").value;
             const khuVuc = document.getElementById("khuVuc").value.trim();
             const weight = parseInt(document.getElementById("weight").value);
             
-            // Xử lý Giá bán
             let giaBan = document.getElementById("giaBanSelect").value;
             if(giaBan === "other") { giaBan = document.getElementById("giaBanCustom").value.trim(); }
 
@@ -614,7 +612,6 @@
                     document.getElementById("form-view").style.display = "none";
                     document.getElementById("success-view").style.display = "block";
                     
-                    // Xử lý hiển thị ngày dạng Việt Nam DD/MM/YYYY trên View Xác Thực
                     let dateDisplay = "N/A";
                     if(ngayThuRaw.includes("-")) {
                         let p = ngayThuRaw.split("-"); dateDisplay = p[2] + "/" + p[1] + "/" + p[0];
@@ -637,16 +634,14 @@
             });
         }
 
-        // SỬA 5: NÚT X ĐÃ TỰ ĐỘNG REFRESH LÀM MỚI FORM SẠCH SẼ
         function closeSuccessView() {
             document.getElementById("success-view").style.display = "none";
             document.getElementById("form-view").style.display = "block";
             
-            // Xóa sạch các ô đã điền
             document.getElementById("maLo").value = "";
             document.getElementById("tenVuon").value = "";
             document.getElementById("ngayThu").value = "";
-            document.getElementById("ngayThu").type = "text"; // Trả lại cái placeholder
+            document.getElementById("ngayThu").type = "text";
             document.getElementById("khuVuc").value = "";
             document.getElementById("weight").value = "";
             document.getElementById("giaBanSelect").value = "500.000";
